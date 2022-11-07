@@ -31,8 +31,11 @@ class Controller:
 
     def input(self, text=None):
         if text is not None:
-            self.socket.sendall(text.encode())
+            self.print(text)
         return self.socket.recv(1024).decode().replace('\n', '')[:-1]
+
+    def print(self, text):
+        self.socket.sendall(text.encode())
 
     def start_game(self):
 
@@ -74,12 +77,12 @@ class Controller:
                 else:
                     self.model.currently_playing = 'White'
 
-        print(self.model.currently_playing + ' lost because his king died!')
+        self.print(self.model.currently_playing + ' lost because his king died!')
         self.get_after_game_choice()
 
     def get_after_game_choice(self):
         """Asks the player if he wants to play another game"""
-        print('Do you want to play another round? (Y/N)')
+        self.print('Do you want to play another round? (Y/N)')
         choice = self.input()
         if choice.lower() == 'y' or choice.lower() == 'yes':
             self.view.clear_console()
@@ -88,7 +91,7 @@ class Controller:
             self.view.clear_console()
             self.view.print_menu()
         else:
-            print('Invalid input! Please answer with "yes" or "no"')
+            self.print('Invalid input! Please answer with "yes" or "no"')
             self.get_after_game_choice()
 
     def get_menu_choice(self):
@@ -102,7 +105,7 @@ class Controller:
 
         elif selection == '2':
             self.model.ai = True
-            self.user_ai = AI(self.model, self.view, "Black", "White")
+            self.user_ai = AI(self.model, self.view, "Black", "White", self)
             self.model.show_symbols = self.get_symbol_preference()
             self.start_game()
 
@@ -117,20 +120,20 @@ class Controller:
             sys.exit()
 
         else:
-            print('Your choice is not valid! Please try again!')
+            self.print('Your choice is not valid! Please try again!')
             self.get_menu_choice()
 
     def get_symbol_preference(self):
         """Asks the user whether he wants to use symbols(True) or letters(False)"""
         while True:
-            print('Do you want to use symbols? If not, letters will be used instead. (Y/N)')
+            self.print('Do you want to use symbols? If not, letters will be used instead. (Y/N)')
             choice = self.input()
             if choice.lower() == 'y' or choice.lower() == 'yes':
                 return True
             elif choice.lower() == 'n' or choice.lower() == 'no':
                 return False
             else:
-                print('Invalid input! Please answer the question with "yes" or "no"')
+                self.print('Invalid input! Please answer the question with "yes" or "no"')
 
     def get_movement_choice(self):
         """Gets input from user during a game and processes the input"""
@@ -151,7 +154,7 @@ class Controller:
             self.view.print_menu()
 
         if len(choice) < 4:
-            print('Your Choice is not valid. Please try again!')
+            self.print('Your Choice is not valid. Please try again!')
             self.get_movement_choice()
         else:
             lines = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -161,7 +164,7 @@ class Controller:
             if start_pos[0] in lines and goal_pos[0] in lines and start_pos[1] in columns and goal_pos[1] in columns:
                 self.model.move_piece(self.model.correlation[start_pos], self.model.correlation[goal_pos])
             else:
-                print('Your Choice is not valid. Please try again!')
+                self.print('Your Choice is not valid. Please try again!')
                 self.get_movement_choice()
 
     # Board aktuellen spieler und ob KI spielt View Symbol
@@ -211,7 +214,7 @@ class Controller:
                 self.model.currently_playing = GameSave['currently_playing']
                 self.model.show_symbols = GameSave['show_symbols']
                 self.load_game = True
-                self.user_ai = AI(self.model, self.view, "Black", "White")
+                self.user_ai = AI(self.model, self.view, "Black", "White", self)
 
                 if 'Ai' in GameSave:
                     self.ai = True
@@ -242,7 +245,7 @@ class Controller:
                                                              i, self.model)
 
         else:
-            print("There's no Save File for your Game!")
+            self.print("There's no Save File for your Game!\n")
             return False
 
         self.view.last_board = self.model.get_copy_board_state()

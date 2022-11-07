@@ -81,12 +81,12 @@ class Model:
                 if update:
                     self.view.update_board()
             else:
-                print('Sorry, this move is not legal. Please try again!')
+                self.controller.print('Sorry, this move is not legal. Please try again!')
                 self.controller.get_movement_choice()
                 if update:
                     self.view.update_board()
         else:
-            print('There is no piece of your color on this space. Please try again!')
+            self.controller.print('There is no piece of your color on this space. Please try again!')
             self.controller.get_movement_choice()
 
     def check_for_king(self):

@@ -10,7 +10,8 @@ import multiprocessing as m
 class AI:
     """Handles the behavior of the AI"""
 
-    def __init__(self, model, view, color, enemy):
+    def __init__(self, model, view, color, enemy, controller):
+        self.controller = controller
         self.model = model
         self.view = view
         self.color = color
@@ -285,7 +286,7 @@ class AI:
         Calcs the best move for the AI moves
         """
 
-        print("AI thinks...")
+        self.controller.print("AI thinks...")
 
         # The current board self.model.board_state shouldn't be overwritten
         # Therefore state is a copy of the Value and not a copy of the Instance
@@ -310,6 +311,8 @@ class AI:
         for i in processes:
             i.join()
             output.update()
+            # self.view.update_board()
+            self.controller.print('\n' + str(output))
 
         for _ in range(queue.qsize()):
             result.append(queue.get())
