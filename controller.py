@@ -47,7 +47,12 @@ class Controller:
 
         res = con.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
-        print(res)
+        if len(res) == 0:
+            self.print("Invalid credentials\n")
+            return
+
+        self.user['username'] = res[0][3]
+        self.print("Login successful\n")
 
     def registration(self):
         """registers a User"""
@@ -187,7 +192,7 @@ class Controller:
             sys.exit()
 
         else:
-            self.print('Your choice is not valid! Please try again!')
+            # self.print('Your choice is not valid! Please try again!')
             self.get_menu_choice()
 
     def get_symbol_preference(self):
