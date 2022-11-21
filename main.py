@@ -1,13 +1,14 @@
 """
     @Author: Schamberger Sandro:    22102471
     @Author: Hagengruber Florian:   22101608
+    @Author: Joiko Christian:       22111097
 """
 import socket
 import multiprocessing as m
 from model import Model
 
 
-class app:
+class App:
 
     def __init__(self):
         """looooooooooooooooooool"""
@@ -36,9 +37,9 @@ class app:
                     welcome = "Hello. You are connected to the Chess Server. Your port is " + str(addr[1]) + '\n\n'
                     conn.sendall(welcome.encode())
 
-                    m.Process(target=app.connect_and_run, args=(conn,)).start()
+                    m.Process(target=App.connect_and_run, args=(conn,)).start()
 
 
 if __name__ == "__main__":
-    a = app()
+    a = App()
     a.run()
