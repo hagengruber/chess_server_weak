@@ -7,7 +7,7 @@ import multiprocessing as m
 from model import Model
 
 
-class app:
+class App:
 
     def __init__(self):
         """looooooooooooooooooool"""
