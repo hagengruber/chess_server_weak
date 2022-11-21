@@ -70,6 +70,8 @@ class Database:
         res = self.cur.execute("""SELECT id FROM Speicherstände WHERE name = '%s'""" % dataname)
         saveid = res.fetchone()[0]
         self.cur.execute("""UPDATE Spieler SET saveid = '%s' WHERE id = '%s'""" % (saveid, playerid))
+        self.con.commit()
+        self.close_connection()
 
     def change_elo(self, playerid, elo):
         """Changes the elo of a given player"""
@@ -103,7 +105,7 @@ class Database:
         self.close_connection()
         return data
 
-    def fetch_private_gamedata(self, gameid):
+    def fetch_full_gamedata(self, gameid):
         """Returns full information for a game"""
         self.open_connection()
         res = self.cur.execute("""SELECT * FROM Spiele WHERE id = '%s'""" % gameid)
