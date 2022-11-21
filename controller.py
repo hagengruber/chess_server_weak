@@ -29,6 +29,7 @@ class Controller:
         self.ai = None
         self.user_ai = None
         self.load_game = False
+        self.user = {'username': None}
 
     def input(self, text=None):
         if text is not None:
@@ -40,13 +41,19 @@ class Controller:
 
     def login(self):
         """user login"""
-        pass
+        con = database.Database()
+        mail = self.input("email address: ")
+        password = self.input("password: ")
+
+        res = con.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
+
+        print(res)
 
     def registration(self):
         """registers a User"""
         con = database.Database()
 
-        # Get the new email address
+        # Get the new email address and password
         res = "bla"
         mail = ""
         password = ""
