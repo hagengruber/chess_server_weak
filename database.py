@@ -14,7 +14,7 @@ class Database:
     def open_connection(self):
         """Creates a new connection and a cursor"""
         self.con = sqlite3.connect("Chess_Online_DB.db")
-        self.cur = self.con.Cursor()
+        self.cur = self.con.cursor()
 
     def close_connection(self):
         """Closes the connection and saves changes"""
@@ -83,12 +83,38 @@ class Database:
         self.open_connection()
         res = self.cur.execute("""SELECT nutzername, siege, niederlagen, remis, elo 
                                   FROM Spieler WHERE id = '%s'""" % playerid)
+        data = res.fetchall()
         self.close_connection()
-        return res.fetchall()
+        return data
 
     def fetch_full_userdata(self, playerid):
         """Returns a players full data"""
         self.open_connection()
         res = self.cur.execute("""SELECT * FROM Spieler WHERE id = '%s'""" % playerid)
+        data = res.fetchall()
         self.close_connection()
-        return res.fetchall()
+        return data
+
+    def fetch_public_gamedata(self, gameid):
+        """Returns public information for a game"""
+        self.open_connection()
+        res = self.cur.execute("""SELECT spieler1id, spieler2id, siegerid FROM Spiele WHERE id = '%s'""" % gameid)
+        data = res.fetchall()
+        self.close_connection()
+        return data
+
+    def fetch_private_gamedata(self, gameid):
+        """Returns full information for a game"""
+        self.open_connection()
+        res = self.cur.execute("""SELECT * FROM Spiele WHERE id = '%s'""" % gameid)
+        data = res.fetchall()
+        self.close_connection()
+        return data
+
+    def fetch_full_savedata(self, saveid):
+        """Returns full information for a savestate"""
+        self.open_connection()
+        res = self.cur.execute("""SELECT * FROM Speicherstände WHERE id = '%s'""" % saveid)
+        data = res.fetchall()
+        self.close_connection()
+        return data
