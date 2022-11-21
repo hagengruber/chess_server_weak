@@ -120,3 +120,11 @@ class Database:
         data = res.fetchall()
         self.close_connection()
         return data
+
+    def fetch_general_data(self, filter, database, sql_exec=""):
+        """Executes SQL statements for general purpose"""
+        self.open_connection()
+        res = self.cur.execute("SELECT " + filter + " FROM " + database + " " + sql_exec)
+        data = res.fetchall()
+        self.close_connection()
+        return data

@@ -1,7 +1,6 @@
 """
     Module for displaying the current state of the game to the user
 """
-import os
 import pyfiglet as banner
 
 
@@ -56,14 +55,12 @@ class View:
     def print_menu(self):
         """Display the starting menu and tell 'model' to ask the user what he wants to do"""
 
-        message = banner.figlet_format("Chess Online")
-        self.socket.sendall(message.encode())
+        message = "Welcome to...\n\n"
 
-        message = '\n\n-Enter a move by giving the coordinates of the starting point and the goal point\n'
-        self.socket.sendall(message.encode())
-        message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
-        self.socket.sendall(message.encode())
-        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Exit\n'
-        self.socket.sendall(message.encode())
+        message += banner.figlet_format("Chess  Online")
+
+        message += "\nEnter a valid command or /help\n"
+
+        self.model.controller.print(message)
 
         self.model.controller.get_menu_choice()

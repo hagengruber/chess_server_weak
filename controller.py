@@ -6,6 +6,7 @@ import json
 import sys
 import os
 import pathlib
+import database
 from pieces import *
 
 
@@ -36,6 +37,43 @@ class Controller:
 
     def print(self, text):
         self.socket.sendall(text.encode())
+
+    def registration(self):
+        """registers a User"""
+        con = database.Database()
+
+        # Get the new email address
+        res = "bla"
+        mail = ""
+        password = ""
+
+        while len(res) != 0:
+
+            mail = self.input("Enter your email address: ")
+
+            if len(mail) == 0:
+                self.print("Your input was not a valid email address\n")
+                continue
+
+            res = con.fetch_general_data("mail", "Spieler", "WHERE mail='" + mail + "';")
+
+            if len(res) != 0:
+                self.print("This email address is already taken\n")
+                continue
+
+        while len(password) == 0:
+
+            password = self.input("Enter a new password: ")
+
+            if len(password) == 0:
+                self.print("Your input was not a valid password\n")
+                continue
+
+        # ToDo: Check username: for now: florian.hagengruber@stud.th-deg.de -> f.hagengruber
+        username = mail.split(".")[0][0] + "." + mail.split(".")[1].split("@")[0]
+        con.add_player(mail, password, username)
+
+        self.print("User registration was successful\n")
 
     def start_game(self):
 
@@ -96,7 +134,15 @@ class Controller:
 
     def get_menu_choice(self):
         """Gets input from user and processes the input"""
-        selection = self.input('Please enter the number that corresponds to your desired menu: ')
+        selection = self.input('>_ ')
+
+        # ToDo: Remove Lines, those are just for development purpose
+        if selection == '/register':
+            self.registration()
+
+        if selection == '/login':
+            self.login()
+        # END
 
         if selection == '1':
             self.model.ai = False
