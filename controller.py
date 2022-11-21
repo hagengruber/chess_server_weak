@@ -38,6 +38,10 @@ class Controller:
     def print(self, text):
         self.socket.sendall(text.encode())
 
+    def login(self):
+        """user login"""
+        pass
+
     def registration(self):
         """registers a User"""
         con = database.Database()
@@ -51,7 +55,17 @@ class Controller:
 
             mail = self.input("Enter your email address: ")
 
-            if len(mail) == 0:
+            try:
+
+                if mail.split("@")[1] == "stud.th-deg.de" or mail.split("@")[1] == "th-deg.de":
+                    valid_th_mail = True
+                else:
+                    valid_th_mail = False
+
+            except IndexError:
+                valid_th_mail = False
+
+            if len(mail) == 0 or not valid_th_mail:
                 self.print("Your input was not a valid email address\n")
                 continue
 
