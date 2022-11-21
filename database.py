@@ -77,3 +77,18 @@ class Database:
         self.cur.execute("""UPDATE Spieler SET elo = '%s' WHERE id = '%s'""" % (elo, playerid))
         self.con.commit()
         self.close_connection()
+
+    def fetch_public_userdata(self, playerid):
+        """Returns a players public data"""
+        self.open_connection()
+        res = self.cur.execute("""SELECT nutzername, siege, niederlagen, remis, elo 
+                                  FROM Spieler WHERE id = '%s'""" % playerid)
+        self.close_connection()
+        return res.fetchall()
+
+    def fetch_full_userdata(self, playerid):
+        """Returns a players full data"""
+        self.open_connection()
+        res = self.cur.execute("""SELECT * FROM Spieler WHERE id = '%s'""" % playerid)
+        self.close_connection()
+        return res.fetchall()
