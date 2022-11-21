@@ -10,7 +10,6 @@ class Database:
     def __init__(self):
         self.con = None
         self.cur = None
-        self.statement = None
 
     def open_connection(self):
         """Creates a new connection and a cursor"""
@@ -24,7 +23,7 @@ class Database:
     def add_player(self, mail, password, username):
         """Adds a player to the 'Spieler' table"""
         self.open_connection()
-        self.con.execute("""INSERT INTO Spieler (mail, passwort, nutzername) VALUES
+        self.cur.execute("""INSERT INTO Spieler (mail, passwort, nutzername) VALUES
                             ('%s', '%s', '%s')""" % (mail, password, username))
         self.con.commit()
         self.close_connection()
@@ -32,7 +31,7 @@ class Database:
     def add_game(self, player1id, player2id, victorid):
         """Adds a completed game to the 'Spiele' table"""
         self.open_connection()
-        self.con.execute("""INSERT INTO Spiele (spieler1id, spieler2id, siegerid) VALUES 
+        self.cur.execute("""INSERT INTO Spiele (spieler1id, spieler2id, siegerid) VALUES 
                             ('%s', '%s', '%s')""" % (player1id, player2id, victorid))
         self.con.commit()
         self.close_connection()
@@ -40,6 +39,41 @@ class Database:
     def add_save(self, dataname):
         """Adds a savestate to the 'Speicherstände' table"""
         self.open_connection()
-        self.con.execute("""INSERT INTO Speicherstände (name) VALUES ('%s')""" % dataname)
+        self.cur.execute("""INSERT INTO Speicherstände (name) VALUES ('%s')""" % dataname)
+        self.con.commit()
+        self.close_connection()
+
+    def add_win(self, playerid):
+        """Increases the number of wins by one for a given player"""
+        self.open_connection()
+        self.cur.execute("""UPDATE Spieler SET siege = siege + 1 WHERE id = '%s'""" % playerid)
+        self.con.commit()
+        self.close_connection()
+
+    def add_loss(self, playerid):
+        """Increases the number of losses by one for a given player"""
+        self.open_connection()
+        self.cur.execute("""UPDATE Spieler SET niederlagen = niederlagen + 1 WHERE id = '%s'""" % playerid)
+        self.con.commit()
+        self.close_connection()
+
+    def add_remis(self, playerid):
+        """Increases the number of remis by one for a given player"""
+        self.open_connection()
+        self.cur.execute("""UPDATE Spieler SET remis = remis + 1 WHERE id = '%s'""" % playerid)
+        self.con.commit()
+        self.close_connection()
+
+    def change_saveid(self, playerid, dataname):
+        """Changes the saveid of a given player to the id of a given savestate"""
+        self.open_connection()
+        res = self.cur.execute("""SELECT id FROM Speicherstände WHERE name = '%s'""" % dataname)
+        saveid = res.fetchone()[0]
+        self.cur.execute("""UPDATE Spieler SET saveid = '%s' WHERE id = '%s'""" % (saveid, playerid))
+
+    def change_elo(self, playerid, elo):
+        """Changes the elo of a given player"""
+        self.open_connection()
+        self.cur.execute("""UPDATE Spieler SET elo = '%s' WHERE id = '%s'""" % (elo, playerid))
         self.con.commit()
         self.close_connection()
