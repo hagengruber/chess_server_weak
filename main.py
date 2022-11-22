@@ -10,7 +10,6 @@ from model import Model
 class App:
 
     def __init__(self):
-        """looooooooooooooooooool"""
         self.ip = socket.gethostbyname(socket.gethostname())
         self.host = self.ip
         self.port = 8080
@@ -36,9 +35,9 @@ class App:
                     welcome = "Hello. You are connected to the Chess Server. Your port is " + str(addr[1]) + '\n\n'
                     conn.sendall(welcome.encode())
 
-                    m.Process(target=app.connect_and_run, args=(conn,)).start()
+                    m.Process(target=App.connect_and_run, args=(conn,)).start()
 
 
 if __name__ == "__main__":
-    a = app()
+    a = App()
     a.run()

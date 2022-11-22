@@ -1,7 +1,6 @@
 """
     Module for displaying the current state of the game to the user
 """
-import os
 import pyfiglet as banner
 
 
