@@ -28,11 +28,11 @@ class Database:
         self.con.commit()
         self.close_connection()
 
-    def add_game(self, player1id, player2id, victorid):
+    def add_game(self, player1_id, player2_id, victor_id):
         """Adds a completed game to the 'Spiele' table"""
         self.open_connection()
         self.cur.execute("""INSERT INTO Spiele (spieler1id, spieler2id, siegerid) VALUES 
-                            ('%s', '%s', '%s')""" % (player1id, player2id, victorid))
+                            ('%s', '%s', '%s')""" % (player1_id, player2_id, victor_id))
         self.con.commit()
         self.close_connection()
 
@@ -43,80 +43,92 @@ class Database:
         self.con.commit()
         self.close_connection()
 
-    def add_win(self, playerid):
+    def add_win(self, player_id):
         """Increases the number of wins by one for a given player"""
         self.open_connection()
-        self.cur.execute("""UPDATE Spieler SET siege = siege + 1 WHERE id = '%s'""" % playerid)
+        self.cur.execute("""UPDATE Spieler SET siege = siege + 1 WHERE id = '%s'""" % player_id)
         self.con.commit()
         self.close_connection()
 
-    def add_loss(self, playerid):
+    def add_loss(self, player_id):
         """Increases the number of losses by one for a given player"""
         self.open_connection()
-        self.cur.execute("""UPDATE Spieler SET niederlagen = niederlagen + 1 WHERE id = '%s'""" % playerid)
+        self.cur.execute("""UPDATE Spieler SET niederlagen = niederlagen + 1 WHERE id = '%s'""" % player_id)
         self.con.commit()
         self.close_connection()
 
-    def add_remis(self, playerid):
+    def add_remis(self, player_id):
         """Increases the number of remis by one for a given player"""
         self.open_connection()
-        self.cur.execute("""UPDATE Spieler SET remis = remis + 1 WHERE id = '%s'""" % playerid)
+        self.cur.execute("""UPDATE Spieler SET remis = remis + 1 WHERE id = '%s'""" % player_id)
         self.con.commit()
         self.close_connection()
 
-    def change_saveid(self, playerid, dataname):
+    def change_saveid(self, player_id, dataname):
         """Changes the saveid of a given player to the id of a given savestate"""
         self.open_connection()
         res = self.cur.execute("""SELECT id FROM Speicherstände WHERE name = '%s'""" % dataname)
-        saveid = res.fetchone()[0]
-        self.cur.execute("""UPDATE Spieler SET saveid = '%s' WHERE id = '%s'""" % (saveid, playerid))
+        save_id = res.fetchone()[0]
+        self.cur.execute("""UPDATE Spieler SET saveid = '%s' WHERE id = '%s'""" % (save_id, player_id))
         self.con.commit()
         self.close_connection()
 
-    def change_elo(self, playerid, elo):
+    def change_elo(self, victor_id, loser_id, elo):
         """Changes the elo of a given player"""
+        self.add_elo(victor_id, elo)
+        self.remove_elo(loser_id, elo)
+
+    def add_elo(self, player_id, elo):
+        """Increase a players elo"""
         self.open_connection()
-        self.cur.execute("""UPDATE Spieler SET elo = '%s' WHERE id = '%s'""" % (elo, playerid))
+        self.cur.execute("""UPDATE Spieler SET elo = elo + '%s' WHERE id = '%s'""" % (elo, player_id))
         self.con.commit()
         self.close_connection()
 
-    def fetch_public_userdata(self, playerid):
+    def remove_elo(self, player_id, elo):
+        """Decrease a players elo"""
+        self.open_connection()
+        self.cur.execute("""UPDATE Spieler SET elo = elo - '%s' WHERE id = '%s'""" % (elo, player_id))
+        self.con.commit()
+        self.close_connection()
+
+    def fetch_public_userdata(self, player_id):
         """Returns a players public data"""
         self.open_connection()
         res = self.cur.execute("""SELECT nutzername, siege, niederlagen, remis, elo 
-                                  FROM Spieler WHERE id = '%s'""" % playerid)
+                                  FROM Spieler WHERE id = '%s'""" % player_id)
         data = res.fetchall()
         self.close_connection()
         return data
 
-    def fetch_full_userdata(self, playerid):
+    def fetch_full_userdata(self, player_id):
         """Returns a players full data"""
         self.open_connection()
-        res = self.cur.execute("""SELECT * FROM Spieler WHERE id = '%s'""" % playerid)
+        res = self.cur.execute("""SELECT * FROM Spieler WHERE id = '%s'""" % player_id)
         data = res.fetchall()
         self.close_connection()
         return data
 
-    def fetch_public_gamedata(self, gameid):
+    def fetch_public_gamedata(self, game_id):
         """Returns public information for a game"""
         self.open_connection()
-        res = self.cur.execute("""SELECT spieler1id, spieler2id, siegerid FROM Spiele WHERE id = '%s'""" % gameid)
+        res = self.cur.execute("""SELECT spieler1id, spieler2id, siegerid FROM Spiele WHERE id = '%s'""" % game_id)
         data = res.fetchall()
         self.close_connection()
         return data
 
-    def fetch_full_gamedata(self, gameid):
+    def fetch_full_gamedata(self, game_id):
         """Returns full information for a game"""
         self.open_connection()
-        res = self.cur.execute("""SELECT * FROM Spiele WHERE id = '%s'""" % gameid)
+        res = self.cur.execute("""SELECT * FROM Spiele WHERE id = '%s'""" % game_id)
         data = res.fetchall()
         self.close_connection()
         return data
 
-    def fetch_full_savedata(self, saveid):
+    def fetch_full_savedata(self, save_id):
         """Returns full information for a savestate"""
         self.open_connection()
-        res = self.cur.execute("""SELECT * FROM Speicherstände WHERE id = '%s'""" % saveid)
+        res = self.cur.execute("""SELECT * FROM Speicherstände WHERE id = '%s'""" % save_id)
         data = res.fetchall()
         self.close_connection()
         return data
