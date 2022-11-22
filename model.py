@@ -113,7 +113,7 @@ class Model:
 
         return temp
 
-    def calculate_elo_change(self, victor_id, loser_id):
+    def recalculate_elo(self, victor_id, loser_id):
         victor_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + victor_id)
         loser_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + loser_id)
         elo_difference = max(victor_elo, loser_elo) - min(victor_elo, loser_elo)
