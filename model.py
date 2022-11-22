@@ -112,3 +112,14 @@ class Model:
             temp.append(i)
 
         return temp
+
+    def calculate_elo_change(self, victor_id, loser_id):
+        victor_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + victor_id)
+        loser_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + loser_id)
+        elo_difference = max(victor_elo, loser_elo) - min(victor_elo, loser_elo)
+        elo_difference = elo_difference / 400
+        expected_value = 1 / (1 + 10**elo_difference)
+        changed_elo = victor_elo + 20 * (1 - expected_value)
+        elo_change = changed_elo - victor_elo
+        self.database.add_elo(victor_id, elo_change)
+        self.database.remove_elo(loser_id, elo_change)
