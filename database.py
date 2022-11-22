@@ -20,11 +20,11 @@ class Database:
         """Closes the connection and saves changes"""
         self.con.close()
 
-    def add_player(self, mail, password, username):
+    def add_player(self, mail, password, username, code):
         """Adds a player to the 'Spieler' table"""
         self.open_connection()
-        self.cur.execute("""INSERT INTO Spieler (mail, passwort, nutzername) VALUES
-                            ('%s', '%s', '%s')""" % (mail, password, username))
+        self.cur.execute("""INSERT INTO Spieler (mail, passwort, nutzername, aktivierungscode) VALUES
+                            ('%s', '%s', '%s', '%s')""" % (mail, password, username, code))
         self.con.commit()
         self.close_connection()
 
@@ -121,10 +121,17 @@ class Database:
         self.close_connection()
         return data
 
-    def fetch_general_data(self, filter, database, sql_exec=""):
-        """Executes SQL statements for general purpose"""
+    def fetch_general_data(self, filter, table, sql_exec=""):
+        """Executes SQL statements for general select purpose"""
         self.open_connection()
-        res = self.cur.execute("SELECT " + filter + " FROM " + database + " " + sql_exec)
+        res = self.cur.execute("SELECT " + filter + " FROM " + table + " " + sql_exec)
         data = res.fetchall()
         self.close_connection()
         return data
+
+    def update_general_data(self, table, column, content, sql_exec=""):
+        """Executes SQL statements for general update purpose"""
+        self.open_connection()
+        self.cur.execute("UPDATE " + table + " SET " + column + "=" + content + " " + sql_exec)
+        self.con.commit()
+        self.close_connection()

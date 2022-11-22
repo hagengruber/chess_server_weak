@@ -8,6 +8,7 @@ import os
 import pathlib
 import database
 from pieces import *
+from mail import Mail
 
 
 def get_files(i):
@@ -22,13 +23,14 @@ def get_files(i):
 class Controller:
     """Class that handles everything for the module"""
 
-    def __init__(self, view, socket):
+    def __init__(self, view, socket, queue):
         self.socket = socket
         self.model = None
         self.view = view
         self.ai = None
         self.user_ai = None
         self.load_game = False
+        self.queue = queue
         self.user = {'username': None}
 
     def input(self, text=None):
@@ -39,8 +41,23 @@ class Controller:
     def print(self, text):
         self.socket.sendall(text.encode())
 
+    def logout(self):
+
+        if self.user['username'] is None:
+            self.print("You are already logged out\n")
+            return
+        else:
+            self.user['username'] = None
+            self.print("Logout successful\n")
+            return
+
     def login(self):
         """user login"""
+
+        if self.user['username'] is not None:
+            self.print("You are already logged in as " + str(self.user['username']) + "\n")
+            return
+
         con = database.Database()
         mail = self.input("email address: ")
         password = self.input("password: ")
@@ -51,8 +68,17 @@ class Controller:
             self.print("Invalid credentials\n")
             return
 
+        if res[0][9] is not None:
+            code = self.input("Enter your activation Code: ")
+            if code == res[0][9]:
+                con.update_general_data('Spieler', '"aktivierungscode"', 'NULL', 'WHERE mail="' + mail + '";')
+            else:
+                self.print("Wrong activation Code\n")
+                return
+
         self.user['username'] = res[0][3]
         self.print("Login successful\n")
+        return
 
     def registration(self):
         """registers a User"""
@@ -97,9 +123,16 @@ class Controller:
 
         # ToDo: Check username: for now: florian.hagengruber@stud.th-deg.de -> f.hagengruber
         username = mail.split(".")[0][0] + "." + mail.split(".")[1].split("@")[0]
-        con.add_player(mail, password, username)
+
+        m = Mail()
+        code = Mail.create_code()
+
+        con.add_player(mail, password, username, code)
+
+        m.send_mail(mail, code)
 
         self.print("User registration was successful\n")
+        self.print("The activation Code for your account was send to your email address\n")
 
     def start_game(self):
 
@@ -158,6 +191,34 @@ class Controller:
             self.print('Invalid input! Please answer with "yes" or "no"')
             self.get_after_game_choice()
 
+    def join_lobby(self):
+        self.print("Join Lobby...\n")
+
+        temp = self.queue.get()
+        print("Join: " + str(temp))
+        temp.append(self.user)
+        self.queue.put(temp)
+
+        self.print("Looking for Enemies...\n")
+
+        while True:
+
+            temp = self.queue.get()
+
+            if len(temp) >= 2:
+                self.print("Found Enemy...\n")
+
+                for i in range(len(temp)):
+                    if temp[i]["username"] == self.user["username"]:
+                        temp.remove(temp[i])
+
+                self.queue.put(temp)
+                self.print("Join successful\n")
+                print(temp)
+                break
+            else:
+                self.queue.put(temp)
+
     def get_menu_choice(self):
         """Gets input from user and processes the input"""
         selection = self.input('>_ ')
@@ -168,6 +229,12 @@ class Controller:
 
         if selection == '/login':
             self.login()
+
+        if selection == '/logout':
+            self.logout()
+
+        if selection == '/joinlobby':
+            self.join_lobby()
         # END
 
         if selection == '1':
