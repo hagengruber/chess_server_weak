@@ -1,6 +1,7 @@
 """
     @Author: Schamberger Sandro:    22102471
     @Author: Hagengruber Florian:   22101608
+    @Author: Joiko Christian:       22111097
 """
 import socket
 import multiprocessing as m
