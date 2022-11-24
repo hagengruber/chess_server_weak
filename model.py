@@ -1,8 +1,10 @@
 """
     Module for managing and manipulating data
 """
+from unittest import case
 from view import View
 from controller import Controller
+import pieces
 from pieces import Rook, Horse, Bishop, Pawn, King, Queen
 
 
@@ -57,6 +59,8 @@ class Model:
             if self.board_state[_] is not None:
                 self.pieces.append(self.board_state[_])
 
+        self.check_rochade()
+
     def move_piece(self, start_pos, goal_pos, update=True):
         """Move a piece to a given position if the move is legal"""
 
@@ -73,23 +77,45 @@ class Model:
                 self.board_state[start_pos] = None
                 moved_piece.position = goal_pos
                 if type(moved_piece) == Pawn:
+                    if self.check_en_passant(moved_piece):
+                        pass
                     if moved_piece.upgrade():
-                        self.board_state[goal_pos] = Queen(self.currently_playing, goal_pos, model)
+                        self.board_state[goal_pos] = Queen(
+                            self.currently_playing, goal_pos, model)
+                        
+                if type(moved_piece) == King and self.check_rochade:
+                    if goal_pos == 62:
+                        self.board_state[61] = self.board_state[63]
+                        self.board_state[63] = None
+
+                    if goal_pos == 57 or goal_pos == 58:
+                        self.board_state[goal_pos+1] = self.board_state[56]
+                        self.board_state[56] = None
+
+                    if goal_pos == 6:
+                        self.board_state[6] = self.board.state[7]
+                        self.board_state[0] = None
+
+                    if goal_pos == 1 or goal_pos == 2:
+                        self.board_state[goal_pos+1] = self.board_state[0]
+                        self.board_state[0] = None
+
+                
                 moved_piece.moved = True
                 if killed_piece is not None:
                     self.pieces.remove(killed_piece)
                 if update:
                     self.view.update_board()
             else:
-                self.controller.print('Sorry, this move is not legal. Please try again!')
+                self.view.invalid_input('Sorry, this move is not legal. Please try again!')
                 self.controller.get_movement_choice()
                 if update:
                     self.view.update_board()
         else:
-            self.controller.print('There is no piece of your color on this space. Please try again!')
+            self.view.invalid_input('There is no piece of your color on this space. Please try again!')
             self.controller.get_movement_choice()
 
-    def check_for_king(self):
+    def check_for_king(self, piece):
         """Check whether the king of the currently playing team is alive or not """
         king_alive = False
         for i in self.pieces:
@@ -110,3 +136,21 @@ class Model:
             temp.append(i)
 
         return temp
+
+    def check_rochade(self):
+        """Returns True when Rochade is possible"""
+
+        kopie = self.get_copy_board_state()
+
+        if self.currently_playing == "White":
+            row = kopie[56:]
+        else:
+            row = kopie[:8]
+
+        if row[0].moved == False and row[4].moved == False and row[7].moved == False:
+            if row[1] == None and row[2] == None and row[3] == None or row[5] == None and row[6] == None:
+                return True
+
+    def check_remis(self):
+        pass
+
