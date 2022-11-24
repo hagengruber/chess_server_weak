@@ -1,15 +1,12 @@
 """
     Module for getting and processing input from the user
 """
-
-from unittest import case
 from algorithm import AI
 import json
 import sys
 import os
 import pathlib
 from pieces import *
-import re
 
 
 def get_files(i):
@@ -32,7 +29,16 @@ class Controller:
         self.user_ai = None
         self.load_game = False
 
+    def input(self, text=None):
+        if text is not None:
+            self.print(text)
+        return self.socket.recv(1024).decode().replace('\n', '')[:-1]
+
+    def print(self, text):
+        self.socket.sendall(text.encode())
+
     def start_game(self):
+
         """Starts the Game and goes into the Game Loop"""
 
         if not self.load_game:
@@ -45,7 +51,7 @@ class Controller:
                     self.model.pieces.append(self.model.board_state[_])
 
         self.model.view.update_board()
-        self.get_movement_choice(self.view.get_movement_choice())
+        self.get_movement_choice()
 
         self.model.currently_playing = 'Black'
 
@@ -56,7 +62,7 @@ class Controller:
                 if self.model.currently_playing == 'Black':
                     self.user_ai.move()
                 else:
-                    self.get_movement_choice(self.view.get_movement_choice())
+                    self.get_movement_choice()
 
                 if self.model.currently_playing == 'White':
                     self.model.currently_playing = 'Black'
@@ -65,137 +71,103 @@ class Controller:
 
         else:
             while self.model.check_for_king():
-                self.get_movement_choice(self.view.get_movement_choice())
+                self.get_movement_choice()
                 if self.model.currently_playing == 'White':
                     self.model.currently_playing = 'Black'
                 else:
                     self.model.currently_playing = 'White'
 
-        self.print(self.model.currently_playing +
-                   ' lost because his king died!')
+        self.print(self.model.currently_playing + ' lost because his king died!')
+        self.get_after_game_choice()
 
-        self.get_after_game_choice(self.view.get_after_game_choice())
-
-    def get_after_game_choice(self, input):
+    def get_after_game_choice(self):
         """Asks the player if he wants to play another game"""
-
-        if input.lower() == 'y' or input.lower() == 'yes':
+        self.print('Do you want to play another round? (Y/N)')
+        choice = self.input()
+        if choice.lower() == 'y' or choice.lower() == 'yes':
             self.view.clear_console()
             self.start_game()
-        elif input.lower() == 'n' or input.lower() == 'no':
+        elif choice.lower() == 'n' or choice.lower() == 'no':
             self.view.clear_console()
             self.view.print_menu()
         else:
-            self.view.invalid_input('Please answer with "yes" or "no"')
-            self.get_after_game_choice(self.view.get_after_game_choice())
+            self.print('Invalid input! Please answer with "yes" or "no"')
+            self.get_after_game_choice()
 
-    def get_menu_choice(self, input):
+    def get_menu_choice(self):
         """Gets input from user and processes the input"""
+        selection = self.input('Please enter the number that corresponds to your desired menu: ')
 
-        if int(input):
-            if len(input) == 1:
+        if selection == '1':
+            self.model.ai = False
+            self.model.show_symbols = self.get_symbol_preference()
+            self.start_game()
 
-                if input == '1':
-                    self.model.ai = False
-                    self.model.show_symbols = self.get_symbol_preference(
-                        self.view.get_symbol_preference())
-                    self.start_game()
+        elif selection == '2':
+            self.model.ai = True
+            self.user_ai = AI(self.model, self.view, "Black", "White", self)
+            self.model.show_symbols = self.get_symbol_preference()
+            self.start_game()
 
-                elif input == '2':
-                    self.model.ai = True
-                    self.user_ai = AI(self.model, self.view,
-                                      "Black", "White", self)
-                    self.model.show_symbols = self.get_symbol_preference(
-                        self.view.get_symbol_preference())
+        elif selection == '3':
+            cont = self.load()
+            if cont:
+                # self.view.update_board()
+                self.start_game()
 
-                    self.start_game()
-
-                elif input == '3':
-                    cont = self.load()
-                    if cont:
-                        # self.view.update_board()
-                        self.start_game()
-
-                elif input == '4':
-                    self.model.view.clear_console()
-                    sys.exit()
-            else:
-                self.view.invalid_input('Please try again!')
-                self.get_menu_choice(self.view.get_menu_choice())
-        else:
-            self.view.invalid_input("Please insert a valid Number")
-            self.get_menu_choice(self.view.get_menu_choice())
-            self.get_menu_choice(self.view.get_symbol_preference())
-
-    def get_symbol_preference(self, input):
-        """Asks the user whether he wants to use symbols(True) or letters(False)"""
-
-        if re.match('^y', input) or re.match('yes', input):
-            return True
-
-        elif re.match('^n', input) or re.match('no', input):
-            return False
-
-        else:
-            self.view.invalid_input(
-                'Please answer the question with "yes" or "no"')
-            self.get_symbol_preference(self.view.get_symbol_preference())
-
-    def get_movement_choice(self, input):
-        """Gets input from user during a game and processes the input"""
-
-        input = input.upper()
-        if input == "Q":
+        elif selection == '4':
             self.model.view.clear_console()
             sys.exit()
 
-        if input == "S":
+        else:
+            self.print('Your choice is not valid! Please try again!')
+            self.get_menu_choice()
+
+    def get_symbol_preference(self):
+        """Asks the user whether he wants to use symbols(True) or letters(False)"""
+        while True:
+            self.print('Do you want to use symbols? If not, letters will be used instead. (Y/N)')
+            choice = self.input()
+            if choice.lower() == 'y' or choice.lower() == 'yes':
+                return True
+            elif choice.lower() == 'n' or choice.lower() == 'no':
+                return False
+            else:
+                self.print('Invalid input! Please answer the question with "yes" or "no"')
+
+    def get_movement_choice(self):
+        """Gets input from user during a game and processes the input"""
+        choice = self.input('Please enter your desired Move: ').upper()
+
+        if choice == "Q":
+            self.model.view.clear_console()
+            sys.exit()
+
+        if choice == "S":
             self.save()
             self.view.clear_console()
             self.view.print_menu()
-            self.get_movement_choice(self.view.get_menu_choice())
+            self.get_menu_choice()
 
-        if input == "M":
+        if choice == "M":
             self.view.clear_console()
             self.view.print_menu()
 
-        if len(input) < 4:
-            self.view.invalid_input('Please try again!')
-            self.get_movement_choice(self.view.get_movement_choice())
+        if len(choice) < 4:
+            self.print('Your Choice is not valid. Please try again!')
+            self.get_movement_choice()
         else:
-            if re.match('[A-H][0-9][A-H][0-9]', input):
-                pass
-
-            if re.match('^[--]',input):
-                if input[2:] == "STATS":
-                    self.view.print("Stats")
-                if input[2:] == "Surrender":
-                    self.view.print("aufgeben")
-                    #aufgeben das gleich wie Quit?
-                if input[2:] == "REMIS":
-                        self.view.print("aufgeben")
-                if input[2:] == "HELP":
-                    """
-                    self.view.print("q - Aufgeben\n")
-                    self.view.print("s - Speichern und schließen\n")
-                    self.view.print("m - Hauptmenu\n")
-                    
-                    Funktioniert nicht wegen Input Validation
-                    """
-                
-
             lines = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
             columns = ['1', '2', '3', '4', '5', '6', '7', '8']
-            start_pos = input[:2]
-            goal_pos = input[-2:]
-                        
+            start_pos = choice[:2]
+            goal_pos = choice[-2:]
             if start_pos[0] in lines and goal_pos[0] in lines and start_pos[1] in columns and goal_pos[1] in columns:
-                self.model.move_piece(
-                self.model.correlation[start_pos], self.model.correlation[goal_pos])
+                self.model.move_piece(self.model.correlation[start_pos], self.model.correlation[goal_pos])
             else:
-                self.view.invalid_input('Please try again!')
-                self.get_movement_choice(self.view.get_movement_choice())
+                self.print('Your Choice is not valid. Please try again!')
+                self.get_movement_choice()
 
+    # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):
         """Saves the current state to a JSON-File"""
         GameSave = {'currently_playing': str(self.model.currently_playing),
@@ -242,16 +214,14 @@ class Controller:
                 self.model.currently_playing = GameSave['currently_playing']
                 self.model.show_symbols = GameSave['show_symbols']
                 self.load_game = True
-                self.user_ai = AI(self.model, self.view,
-                                  "Black", "White", self)
+                self.user_ai = AI(self.model, self.view, "Black", "White", self)
 
                 if 'Ai' in GameSave:
                     self.ai = True
                     self.model.ai = True
 
                 for i in range(64):
-                    # Moved wird nicht übernommen
-                    if GameSave['board_state'][str(i)]['piece'] == 'None':
+                    if GameSave['board_state'][str(i)]['piece'] == 'None':  # Moved wird nicht übernommen
                         self.model.board_state[i] = None
 
                     else:

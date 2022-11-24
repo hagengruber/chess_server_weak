@@ -286,7 +286,7 @@ class AI:
         Calcs the best move for the AI moves
         """
 
-        self.view.print("AI thinks...")
+        self.controller.print("AI thinks...")
 
         # The current board self.model.board_state shouldn't be overwritten
         # Therefore state is a copy of the Value and not a copy of the Instance
@@ -312,7 +312,7 @@ class AI:
             i.join()
             output.update()
             # self.view.update_board()
-            self.view.print('\n' + str(output))
+            self.controller.print('\n' + str(output))
 
         for _ in range(queue.qsize()):
             result.append(queue.get())

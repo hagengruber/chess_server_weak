@@ -441,7 +441,6 @@ class Pawn(Piece):
 
     def check_legal_move(self, position, state="", return_all=False):
         """Makes a list of all legal moves and returns True if the given position is part of them"""
-    
         allowed = []
         if state == "":
             state = self.model.board_state
@@ -588,17 +587,10 @@ class King(Piece):
         if not self.check_occupied_friendly(self.position + 8, state):
             allowed.append(self.position + 8)
         if not self.check_occupied_friendly(self.position + 9, state):
-            allowed.append(self.position + 9)   
-
-        if self.model.check_rochade():
-            allowed.append(self.position - 3)
-            allowed.append(self.position + 2)   
-            
+            allowed.append(self.position + 9)
         if return_all:
             return allowed
         if position in allowed:
             return True
         else:
             return False
-        
-        

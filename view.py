@@ -2,7 +2,7 @@
     Module for displaying the current state of the game to the user
 """
 import os
-import pyfiglet
+import pyfiglet as banner
 
 
 class View:
@@ -12,14 +12,6 @@ class View:
         self.socket = socket
         self.model = None
         self.last_board = None
-
-    def input(self, text=None):
-        if text is not None:
-            self.print(text)
-        return self.socket.recv(1024).decode().replace('\n', '')[:-1]
-
-    def print(self, text):
-        self.socket.sendall(text.encode())
 
     def update_board(self, state=""):
         """Updates the board to show recent movement"""
@@ -31,18 +23,16 @@ class View:
         box_top = ' \u250C' + '\u2500\u2500\u2500\u252C' * 7 + '\u2500\u2500\u2500\u2510'
         box_middle = ' \u251C' + '\u2500\u2500\u2500\u253C' * 7 + '\u2500\u2500\u2500\u2524'
         box_bottom = ' \u2514' + '\u2500\u2500\u2500\u2534' * 7 + '\u2500\u2500\u2500\u2518'
-        self.print(
-            self.model.currently_playing + ' is currently playing!\n')
-        self.print('   1   2   3   4   5   6   7   8\n')
-        self.print(box_top + '\n')
+        self.model.controller.print(self.model.currently_playing + ' is currently playing!\n')
+        self.model.controller.print('   1   2   3   4   5   6   7   8\n')
+        self.model.controller.print(box_top + '\n')
         letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
         for i in range(8):
             row = letters[i]
             for j in range(8):
                 if state[i * 8 + j] is not None:
                     if state[i * 8 + j] != self.last_board[i * 8 + j]:
-                        row += '\u2502\x1b[6;30;42m' + ' ' + \
-                            state[i * 8 + j].symbol + ' \x1b[0m'
+                        row += '\u2502\x1b[6;30;42m' + ' ' + state[i * 8 + j].symbol + ' \x1b[0m'
                     else:
                         row += '\u2502' + ' ' + state[i * 8 + j].symbol + ' '
                 else:
@@ -52,10 +42,10 @@ class View:
                         row += '\u2502' + '   '
 
             row += '\u2502'
-            self.print(row + '\n')
+            self.model.controller.print(row + '\n')
             if i != 7:
-                self.print(box_middle + '\n')
-        self.print(box_bottom + '\n')
+                self.model.controller.print(box_middle + '\n')
+        self.model.controller.print(box_bottom + '\n')
 
         self.last_board = self.model.get_copy_board_state()
 
@@ -66,7 +56,7 @@ class View:
     def print_menu(self):
         """Display the starting menu and tell 'model' to ask the user what he wants to do"""
 
-        message = pyfiglet.figlet_format("Chess Online")
+        message = banner.figlet_format("Chess Online")
         self.socket.sendall(message.encode())
 
         message = '\n\n-Enter a move by giving the coordinates of the starting point and the goal point\n'
@@ -76,25 +66,4 @@ class View:
         message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Exit\n'
         self.socket.sendall(message.encode())
 
-        self.model.controller.get_menu_choice(self.get_menu_choice())
-
-    def invalid_input(self, input):
-        self.print('Invalid input! \n')
-        self.print(input)
-
-    def get_after_game_choice(self):
-        self.print('Do you want to play another round? (Y/N): ')
-        return input()
-
-    def get_menu_choice(self):
-        self.print('Please enter the number that corresponds to your desired menu: ')
-        return self.input()
-        
-    def get_symbol_preference(self):
-        self.print(
-            'Do you want to use symbols? If not, letters will be used instead. (Y/N): ')
-        return self.input()
-
-    def get_movement_choice(self):
-        self.print('Please enter your desired Move: ')
-        return self.input()
+        self.model.controller.get_menu_choice()
