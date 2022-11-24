@@ -168,6 +168,9 @@ class Controller:
 
             if re.match('^[--]', input):
                 print("Statistiken")
+                #-stats status des gegners
+                #--surrender aufgebenbeendet das spiel und stats aktualisieren
+                #--remis EINIGEN auf Remis
 
             lines = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
             columns = ['1', '2', '3', '4', '5', '6', '7', '8']

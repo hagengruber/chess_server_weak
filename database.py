@@ -119,4 +119,4 @@ class Database:
         res = self.cur.execute("""SELECT * FROM Speicherstände WHERE id = '%s'""" % saveid)
         data = res.fetchall()
         self.close_connection()
-        return data
+        return 
