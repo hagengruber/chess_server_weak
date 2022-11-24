@@ -6,7 +6,6 @@ from database import Database
 Tests all function that alter or add data in the database
 Function that return data and establish/end connections are not explicitly tested, as they are
 included in the other functions
-
 Tests only work on an empty database! Don't forget to reset the values for Auto Increment!
 """
 
