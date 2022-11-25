@@ -9,6 +9,7 @@ import sys
 import os
 import pathlib
 from pieces import *
+from database import * 
 import re
 
 
@@ -145,43 +146,64 @@ class Controller:
         """Gets input from user during a game and processes the input"""
 
         input = input.upper()
-        if input == "Q":
-            self.model.view.clear_console()
-            sys.exit()
+        if len(input) == 1:
+ 
+            if input == "Q":
+                self.model.view.clear_console()
+                sys.exit()
 
-        if input == "S":
-            self.save()
-            self.view.clear_console()
-            self.view.print_menu()
-            self.get_movement_choice(self.view.get_menu_choice())
+            elif input == "S":
+                self.save()
+                self.view.clear_console()
+                self.view.print_menu()
+                self.get_movement_choice(self.view.get_menu_choice())
 
-        if input == "M":
-            self.view.clear_console()
-            self.view.print_menu()
+            elif input == "M":
+                self.view.clear_console()
+                self.view.print_menu()
 
-        if len(input) < 4:
-            self.view.invalid_input('Please try again!')
-            self.get_movement_choice(self.view.get_movement_choice())
-        else:
-            if re.match('[A-H][0-9][A-H][0-9]', input):
-                print("Hello")
+            else:
+                self.view.invalid_input('Please try again!')
+                self.get_movement_choice(self.view.get_movement_choice())
 
-            if re.match('^[--]', input):
-                print("Statistiken")
-                #-stats status des gegners
-                #--surrender aufgebenbeendet das spiel und stats aktualisieren
-                #--remis EINIGEN auf Remis
+        elif re.match('^[--]',input):
+                if input[2:] == "STATS":
+                    self.view.print("Stats")
+                    #opponent Stats
+                    cgid = 1 #Wann wird eine Spiel ID erstellt?
+                    # wie erhalte ich die SPieler ID
 
-            lines = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-            columns = ['1', '2', '3', '4', '5', '6', '7', '8']
-            start_pos = input[:2]
-            goal_pos = input[-2:]
+                    #change_saveid ? ? ?
+
+                    id = Database.fetch_public_gamedata(cgid)
+                    data = Database.fetch_public_userdata()
+                    self.view.show_stats(data)
+
+                if input[2:] == "Surrender":
+                    self.view.print("aufgeben")
+                    #aufgeben das gleich wie Quit?
+
+                if input[2:] == "REMIS":
+                        self.view.print("aufgeben")
+                        """ 
+                        wie wird das Remis an den andern übertragen?
+                        Wie wird das Remisangebot vermerkt?
                         
-            if start_pos[0] in lines and goal_pos[0] in lines and start_pos[1] in columns and goal_pos[1] in columns:
+                        """
+
+                if input[2:] == "HELP":
+                    self.view.get_help()
+     
+        else:
+            if re.match('^[A-H][0-8][A-H][0-8]', input):
+                
+                start_pos = input[:2]
+                goal_pos = input[-2:]
+                        
                 self.model.move_piece(
                 self.model.correlation[start_pos], self.model.correlation[goal_pos])
             else:
-                self.view.invalid_input('Please try again!')
+                self.view.invalid_input(' Please try again!')
                 self.get_movement_choice(self.view.get_movement_choice())
 
     def save(self):

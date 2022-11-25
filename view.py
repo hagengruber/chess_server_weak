@@ -5,6 +5,9 @@ import os
 import pyfiglet
 
 
+#Formatierung von Ausgaben Leerzeichen oder Neue Zeile vorne oder hinten einheitlich?
+
+
 class View:
     """Class that handles everything for the module"""
 
@@ -98,3 +101,19 @@ class View:
     def get_movement_choice(self):
         self.print('Please enter your desired Move: ')
         return self.input()
+
+    def show_stats(self, data):
+        self.print('Stats of the opponent')
+        self.print('Username: ' + data[0])
+        self.print('Win: ' + data[1])
+        self.print('Loss: ' + data[2])
+        self.print('Remis: ' + data[3])
+        self.print('Elo: ' + data[4])
+
+    def get_help(self):
+        self.print("q - Quit\n")
+        self.print("s - Save and Quit Game\n")
+        self.print("m - Main Menue\n")
+        self.print("--remis - offer Remis\n")
+        self.print("--surrender - Surrender\n")
+        self.print("--stats - show opponent Stats\n")

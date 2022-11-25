@@ -120,3 +120,5 @@ class Database:
         data = res.fetchall()
         self.close_connection()
         return 
+    
+    

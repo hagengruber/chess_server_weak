@@ -237,7 +237,6 @@ class Piece(metaclass=ABCMeta):
                 break
         return allowed
 
-
 class Rook(Piece):
     """Class for Rooks"""
 
@@ -286,7 +285,6 @@ class Rook(Piece):
             return True
         else:
             return False
-
 
 class Horse(Piece):
     """Class for Horses"""
@@ -355,7 +353,6 @@ class Horse(Piece):
         else:
             return False
 
-
 class Bishop(Piece):
     """Class for Bishops"""
 
@@ -403,7 +400,6 @@ class Bishop(Piece):
             return True
         else:
             return False
-
 
 class Pawn(Piece):
     """Class for Pawns"""
@@ -493,7 +489,6 @@ class Pawn(Piece):
             else:
                 return False
 
-
 class Queen(Piece):
     """Class for Queens"""
 
@@ -540,7 +535,6 @@ class Queen(Piece):
             return True
         else:
             return False
-
 
 class King(Piece):
     """Class for Kings"""
