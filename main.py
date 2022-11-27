@@ -13,7 +13,6 @@ from model import Model
 class App:
 
     def __init__(self):
-        """looooooooooooooooooool"""
         self.ip = socket.gethostbyname(socket.gethostname())
         self.host = self.ip
         self.port = 8080

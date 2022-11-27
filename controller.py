@@ -1,13 +1,16 @@
 """
     Module for getting and processing input from the user
 """
+
+from unittest import case
 from algorithm import AI
 import json
 import sys
 import os
 import pathlib
-import database
 from pieces import *
+from database import *
+import re
 from mail import Mail
 
 
@@ -23,7 +26,7 @@ def get_files(i):
 class Controller:
     """Class that handles everything for the module"""
 
-    def __init__(self, view, socket, games, num_of_thread, lock):
+    def __init__(self, view, socket):
         self.socket = socket
         self.model = None
         self.view = view
@@ -150,7 +153,8 @@ class Controller:
 
         self.init_board()
 
-        self.get_movement_choice()
+        self.model.view.update_board()
+        self.get_movement_choice(self.view.get_movement_choice())
 
         self.model.currently_playing = 'Black'
 
@@ -161,7 +165,7 @@ class Controller:
                 if self.model.currently_playing == 'Black':
                     self.user_ai.move()
                 else:
-                    self.get_movement_choice()
+                    self.get_movement_choice(self.view.get_movement_choice())
 
                 if self.model.currently_playing == 'White':
                     self.model.currently_playing = 'Black'
@@ -170,28 +174,28 @@ class Controller:
 
         else:
             while self.model.check_for_king():
-                self.get_movement_choice()
+                self.get_movement_choice(self.view.get_movement_choice())
                 if self.model.currently_playing == 'White':
                     self.model.currently_playing = 'Black'
                 else:
                     self.model.currently_playing = 'White'
 
         self.view.print(self.model.currently_playing + ' lost because his king died!')
-        self.get_after_game_choice()
 
-    def get_after_game_choice(self):
+        self.get_after_game_choice(self.view.get_after_game_choice())
+
+    def get_after_game_choice(self, input):
         """Asks the player if he wants to play another game"""
-        self.view.print('Do you want to play another round? (Y/N)')
-        choice = self.view.input()
-        if choice.lower() == 'y' or choice.lower() == 'yes':
+
+        if input.lower() == 'y' or input.lower() == 'yes':
             self.view.clear_console()
             self.start_game()
-        elif choice.lower() == 'n' or choice.lower() == 'no':
+        elif input.lower() == 'n' or input.lower() == 'no':
             self.view.clear_console()
             self.view.print_menu()
         else:
-            self.view.print('Invalid input! Please answer with "yes" or "no"')
-            self.get_after_game_choice()
+            self.view.invalid_input('Please answer with "yes" or "no"')
+            self.get_after_game_choice(self.view.get_after_game_choice())
 
     def join_lobby(self):
         self.view.print("Join Lobby...\n")
@@ -280,50 +284,122 @@ class Controller:
         if safe_mode:
             self.lock.release()
 
-    def get_menu_choice(self):
+    def get_menu_choice(self, input):
         """Gets input from user and processes the input"""
-        selection = self.view.input('>_ ')
+        selection = self.input('Please enter the number that corresponds to your desired menu: ')
 
-        # ToDo: Remove Lines, those are just for development purpose
-        if selection == '/register':
-            self.registration()
+        if int(input):
+            if len(input) == 1:
 
-        if selection == '/login':
-            self.login()
+                if input == '1':
+                    self.model.ai = False
+                    self.model.show_symbols = self.get_symbol_preference(
+                        self.view.get_symbol_preference())
+                    self.start_game()
 
-        if selection == '/logout':
-            self.logout()
+                elif input == '2':
+                    self.model.ai = True
+                    self.user_ai = AI(self.model, self.view,
+                                      "Black", "White", self)
+                    self.model.show_symbols = self.get_symbol_preference(
+                        self.view.get_symbol_preference())
 
-        if selection == '/joinlobby':
-            self.join_lobby()
-            self.coop()
+                    self.start_game()
 
-        # END
+                elif input == '3':
+                    cont = self.load()
+                    if cont:
+                        # self.view.update_board()
+                        self.start_game()
 
-        if selection == '1':
-            self.model.ai = False
-            self.model.show_symbols = self.get_symbol_preference()
-            self.start_game()
+                elif input == '4':
+                    self.model.view.clear_console()
+                    sys.exit()
+            else:
+                self.view.invalid_input('Please try again!')
+                self.get_menu_choice(self.view.get_menu_choice())
+        else:
+            self.view.invalid_input("Please insert a valid Number")
+            self.get_menu_choice(self.view.get_menu_choice())
+            self.get_menu_choice(self.view.get_symbol_preference())
 
-        elif selection == '2':
-            self.model.ai = True
-            self.user_ai = AI(self.model, self.view, "Black", "White", self)
-            self.model.show_symbols = self.get_symbol_preference()
-            self.start_game()
+    def get_symbol_preference(self, input):
+        """Asks the user whether he wants to use symbols(True) or letters(False)"""
 
-        elif selection == '3':
-            cont = self.load()
-            if cont:
-                # self.view.update_board()
-                self.start_game()
+        if re.match('^y', input) or re.match('yes', input):
+            return True
 
-        elif selection == '4':
-            self.model.view.clear_console()
-            sys.exit()
+        elif re.match('^n', input) or re.match('no', input):
+            return False
 
         else:
-            # self.view.print('Your choice is not valid! Please try again!')
-            self.get_menu_choice()
+            self.view.invalid_input(
+                'Please answer the question with "yes" or "no"')
+            self.get_symbol_preference(self.view.get_symbol_preference())
+
+    def get_movement_choice(self, move=None, update=True):
+        """Gets input from user during a game and processes the input"""
+
+        move = move.upper()
+        if len(move) == 1:
+
+            if move == "Q":
+                self.model.view.clear_console()
+                sys.exit()
+
+            elif move == "S":
+                self.save()
+                self.view.clear_console()
+                self.view.print_menu()
+                self.get_movement_choice(self.view.get_menu_choice())
+
+            elif move == "M":
+                self.view.clear_console()
+                self.view.print_menu()
+
+            else:
+                self.view.invalid_input('Please try again!')
+                self.get_movement_choice(self.view.get_movement_choice())
+
+        elif re.match('^[--]',move):
+                if move[2:] == "STATS":
+                    self.view.print("Stats")
+                    #opponent Stats
+                    cgid = 1 #Wann wird eine Spiel ID erstellt?
+                    # wie erhalte ich die SPieler ID
+
+                    #change_saveid ? ? ?
+
+                    id = Database.fetch_public_gamedata(cgid)
+                    data = Database.fetch_public_userdata()
+                    self.view.show_stats(data)
+
+                if move[2:] == "Surrender":
+                    self.view.print("aufgeben")
+                    #aufgeben das gleich wie Quit?
+
+                if move[2:] == "REMIS":
+                        self.view.print("aufgeben")
+                        """ 
+                        wie wird das Remis an den andern übertragen?
+                        Wie wird das Remisangebot vermerkt?
+                        
+                        """
+
+                if move[2:] == "HELP":
+                    self.view.get_help()
+
+        else:
+            if re.match('^[A-H][0-8][A-H][0-8]', move):
+
+                start_pos = move[:2]
+                goal_pos = move[-2:]
+
+                self.model.move_piece(
+                self.model.correlation[start_pos], self.model.correlation[goal_pos])
+            else:
+                self.view.invalid_input(' Please try again!')
+                self.get_movement_choice(self.view.get_movement_choice())
 
     def coop(self):
 
@@ -390,60 +466,6 @@ class Controller:
                             self.view.print("The other Player is thinking...")
                             print_wait = False
 
-    def get_symbol_preference(self):
-        """Asks the user whether he wants to use symbols(True) or letters(False)"""
-        while True:
-            self.view.print('Do you want to use symbols? If not, letters will be used instead. (Y/N)')
-            choice = self.view.input()
-            if choice.lower() == 'y' or choice.lower() == 'yes':
-                return True
-            elif choice.lower() == 'n' or choice.lower() == 'no':
-                return False
-            else:
-                self.view.print('Invalid input! Please answer the question with "yes" or "no"')
-
-    def get_movement_choice(self, move=None, update=True):
-        """Gets input from user during a game and processes the input"""
-
-        if move is None:
-            choice = self.view.input('Please enter your desired Move: ').upper()
-        else:
-            choice = move
-
-        if choice == "Q":
-            self.model.view.clear_console()
-            sys.exit()
-
-        if choice == "S":
-            self.save()
-            self.view.clear_console()
-            self.view.print_menu()
-            self.get_menu_choice()
-
-        if choice == "M":
-            self.view.clear_console()
-            self.view.print_menu()
-
-        if len(choice) < 4:
-            self.view.print('Your Choice is not valid. Please try again!')
-            return self.get_movement_choice()
-        else:
-            lines = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-            columns = ['1', '2', '3', '4', '5', '6', '7', '8']
-            start_pos = choice[:2]
-            goal_pos = choice[-2:]
-            if start_pos[0] in lines and goal_pos[0] in lines and start_pos[1] in columns and goal_pos[1] in columns:
-
-                check_move = self.model.move_piece(self.model.correlation[start_pos], self.model.correlation[goal_pos],
-                                                   update=update)
-                if not check_move:
-                    return self.get_movement_choice()
-
-                return choice
-            else:
-                self.view.print('Your Choice is not valid. Please try again!')
-                return self.get_movement_choice()
-
     # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):
         """Saves the current state to a JSON-File"""
@@ -498,7 +520,8 @@ class Controller:
                     self.model.ai = True
 
                 for i in range(64):
-                    if GameSave['board_state'][str(i)]['piece'] == 'None':  # Moved wird nicht übernommen
+                    # Moved wird nicht übernommen
+                    if GameSave['board_state'][str(i)]['piece'] == 'None':
                         self.model.board_state[i] = None
 
                     else:
@@ -522,7 +545,7 @@ class Controller:
                                                              i, self.model)
 
         else:
-            self.view.print("There's no Save File for your Game!\n")
+            self.print("There's no Save File for your Game!\n")
             return False
 
         self.view.last_board = self.model.get_copy_board_state()

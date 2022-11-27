@@ -237,7 +237,6 @@ class Piece(metaclass=ABCMeta):
                 break
         return allowed
 
-
 class Rook(Piece):
     """Class for Rooks"""
 
@@ -286,7 +285,6 @@ class Rook(Piece):
             return True
         else:
             return False
-
 
 class Horse(Piece):
     """Class for Horses"""
@@ -355,7 +353,6 @@ class Horse(Piece):
         else:
             return False
 
-
 class Bishop(Piece):
     """Class for Bishops"""
 
@@ -404,7 +401,6 @@ class Bishop(Piece):
         else:
             return False
 
-
 class Pawn(Piece):
     """Class for Pawns"""
 
@@ -441,6 +437,7 @@ class Pawn(Piece):
 
     def check_legal_move(self, position, state="", return_all=False):
         """Makes a list of all legal moves and returns True if the given position is part of them"""
+    
         allowed = []
         if state == "":
             state = self.model.board_state
@@ -492,7 +489,6 @@ class Pawn(Piece):
             else:
                 return False
 
-
 class Queen(Piece):
     """Class for Queens"""
 
@@ -540,7 +536,6 @@ class Queen(Piece):
         else:
             return False
 
-
 class King(Piece):
     """Class for Kings"""
 
@@ -587,10 +582,17 @@ class King(Piece):
         if not self.check_occupied_friendly(self.position + 8, state):
             allowed.append(self.position + 8)
         if not self.check_occupied_friendly(self.position + 9, state):
-            allowed.append(self.position + 9)
+            allowed.append(self.position + 9)   
+
+        if self.model.check_rochade():
+            allowed.append(self.position - 3)
+            allowed.append(self.position + 2)   
+            
         if return_all:
             return allowed
         if position in allowed:
             return True
         else:
             return False
+        
+        
