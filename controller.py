@@ -314,8 +314,16 @@ class Controller:
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif input == '5':
+                    self.registration()
+                    self.view.clear_console()
+                    self.view.print("Code was successful sent\n")
+                    self.view.print_menu()
+                    self.get_menu_choice(self.view.get_menu_choice())
+
+                elif input == '6':
                     self.model.view.clear_console()
                     sys.exit()
+
             else:
                 self.view.invalid_input('Please try again!')
                 self.get_menu_choice(self.view.get_menu_choice())
