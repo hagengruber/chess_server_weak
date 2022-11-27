@@ -1,11 +1,9 @@
 """
     Module for displaying the current state of the game to the user
 """
-import os
 import pyfiglet
 
-
-#Formatierung von Ausgaben Leerzeichen oder Neue Zeile vorne oder hinten einheitlich?
+# Formatierung von Ausgaben Leerzeichen oder Neue Zeile vorne oder hinten einheitlich?
 
 
 class View:

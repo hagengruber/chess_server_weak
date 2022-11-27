@@ -16,7 +16,6 @@ class Model:
         self.board_state = list(None for _ in range(64))
         self.view = View(socket)
         self.controller = Controller(self.view, socket, lobby, num_of_thread, lock)
-        self.controller = Controller(self.view, socket)
         self.database = Database()
         self.show_symbols = True
         self.correlation = {'A1': 0, 'A2': 1, 'A3': 2, 'A4': 3, 'A5': 4, 'A6': 5, 'A7': 6, 'A8': 7,
