@@ -2,14 +2,13 @@
     Module for getting and processing input from the user
 """
 
-from unittest import case
 from algorithm import AI
 import json
 import sys
 import os
 import pathlib
 from pieces import *
-from database import *
+import database
 import re
 from mail import Mail
 
@@ -26,7 +25,7 @@ def get_files(i):
 class Controller:
     """Class that handles everything for the module"""
 
-    def __init__(self, view, socket):
+    def __init__(self, view, socket, games, num_of_thread, lock):
         self.socket = socket
         self.model = None
         self.view = view
@@ -36,6 +35,7 @@ class Controller:
         self.games = games
         self.user = {'username': None, 'num_of_thread': num_of_thread, 'game_queue': None, 'color': '', 'enemy': ''}
         self.lock = lock
+        self.db = database.Database()
 
     def logout(self):
 
@@ -54,12 +54,10 @@ class Controller:
             self.view.print("You are already logged in as " + str(self.user['username']) + "\n")
             return
 
-        con = database.Database()
-
         mail = self.view.input("email address: ")
         password = self.view.input("password: ")
 
-        res = con.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
+        res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
         if len(res) == 0:
             self.view.print("Invalid credentials\n")
@@ -68,7 +66,7 @@ class Controller:
         if res[0][9] is not None:
             code = self.view.input("Enter your activation Code: ")
             if code == res[0][9]:
-                con.update_general_data('Spieler', '"aktivierungscode"', 'NULL', 'WHERE mail="' + mail + '";')
+                self.db.update_general_data('Spieler', '"aktivierungscode"', 'NULL', 'WHERE mail="' + mail + '";')
             else:
                 self.view.print("Wrong activation Code\n")
                 return
@@ -79,7 +77,6 @@ class Controller:
 
     def registration(self):
         """registers a User"""
-        con = database.Database()
 
         # Get the new email address and password
         res = "bla"
@@ -104,7 +101,7 @@ class Controller:
                 self.view.print("Your input was not a valid email address\n")
                 continue
 
-            res = con.fetch_general_data("mail", "Spieler", "WHERE mail='" + mail + "';")
+            res = self.db.fetch_general_data("mail", "Spieler", "WHERE mail='" + mail + "';")
 
             if len(res) != 0:
                 self.view.print("This email address is already taken\n")
@@ -124,7 +121,7 @@ class Controller:
         m = Mail()
         code = Mail.create_code()
 
-        con.add_player(mail, password, username, code)
+        self.db.add_player(mail, password, username, code)
 
         m.send_mail(mail, code)
 
@@ -286,16 +283,13 @@ class Controller:
 
     def get_menu_choice(self, input):
         """Gets input from user and processes the input"""
-        selection = self.input('Please enter the number that corresponds to your desired menu: ')
 
         if int(input):
             if len(input) == 1:
 
                 if input == '1':
-                    self.model.ai = False
-                    self.model.show_symbols = self.get_symbol_preference(
-                        self.view.get_symbol_preference())
-                    self.start_game()
+                    self.join_lobby()
+                    self.coop()
 
                 elif input == '2':
                     self.model.ai = True
@@ -313,6 +307,13 @@ class Controller:
                         self.start_game()
 
                 elif input == '4':
+                    self.login()
+                    self.view.clear_console()
+                    self.view.print("Login successful\n")
+                    self.view.print_menu()
+                    self.get_menu_choice(self.view.get_menu_choice())
+
+                elif input == '5':
                     self.model.view.clear_console()
                     sys.exit()
             else:
@@ -337,7 +338,7 @@ class Controller:
                 'Please answer the question with "yes" or "no"')
             self.get_symbol_preference(self.view.get_symbol_preference())
 
-    def get_movement_choice(self, move=None, update=True):
+    def get_movement_choice(self, move, update=True):
         """Gets input from user during a game and processes the input"""
 
         move = move.upper()
@@ -351,7 +352,7 @@ class Controller:
                 self.save()
                 self.view.clear_console()
                 self.view.print_menu()
-                self.get_movement_choice(self.view.get_menu_choice())
+                return self.get_movement_choice(self.view.get_menu_choice())
 
             elif move == "M":
                 self.view.clear_console()
@@ -359,35 +360,36 @@ class Controller:
 
             else:
                 self.view.invalid_input('Please try again!')
-                self.get_movement_choice(self.view.get_movement_choice())
+                return self.get_movement_choice(self.view.get_movement_choice())
 
-        elif re.match('^[--]',move):
-                if move[2:] == "STATS":
-                    self.view.print("Stats")
-                    #opponent Stats
-                    cgid = 1 #Wann wird eine Spiel ID erstellt?
-                    # wie erhalte ich die SPieler ID
+        elif re.match('^[--]', move):
+            if move[2:] == "STATS":
+                self.view.print("Stats")
+                # opponent Stats
+                cgid = 1  # Wann wird eine Spiel ID erstellt?
+                # wie erhalte ich die SPieler ID
 
-                    #change_saveid ? ? ?
+                # change_saveid ? ? ?
 
-                    id = Database.fetch_public_gamedata(cgid)
-                    data = Database.fetch_public_userdata()
-                    self.view.show_stats(data)
+                id = self.db.fetch_public_gamedata(cgid)
+                # ToDo: Spieler-ID holen
+                data = self.db.fetch_public_userdata()
+                self.view.show_stats(data)
 
-                if move[2:] == "Surrender":
-                    self.view.print("aufgeben")
-                    #aufgeben das gleich wie Quit?
+            if move[2:] == "Surrender":
+                self.view.print("aufgeben")
+                # aufgeben das gleich wie Quit?
 
-                if move[2:] == "REMIS":
-                        self.view.print("aufgeben")
-                        """ 
+            if move[2:] == "REMIS":
+                self.view.print("aufgeben")
+                """ 
                         wie wird das Remis an den andern übertragen?
                         Wie wird das Remisangebot vermerkt?
                         
                         """
 
-                if move[2:] == "HELP":
-                    self.view.get_help()
+            if move[2:] == "HELP":
+                self.view.get_help()
 
         else:
             if re.match('^[A-H][0-8][A-H][0-8]', move):
@@ -396,10 +398,11 @@ class Controller:
                 goal_pos = move[-2:]
 
                 self.model.move_piece(
-                self.model.correlation[start_pos], self.model.correlation[goal_pos])
+                    self.model.correlation[start_pos], self.model.correlation[goal_pos], update=update)
+                return move
             else:
                 self.view.invalid_input(' Please try again!')
-                self.get_movement_choice(self.view.get_movement_choice())
+                return self.get_movement_choice(self.view.get_movement_choice())
 
     def coop(self):
 
@@ -456,7 +459,7 @@ class Controller:
 
                         self.view.update_board()
 
-                        games[i]['last_move'] = self.get_movement_choice()
+                        games[i]['last_move'] = self.get_movement_choice(self.view.get_movement_choice())
                         games[i]['currently_playing'] = self.user['enemy']
 
                         temp['games'] = games
@@ -545,7 +548,7 @@ class Controller:
                                                              i, self.model)
 
         else:
-            self.print("There's no Save File for your Game!\n")
+            self.view.print("There's no Save File for your Game!\n")
             return False
 
         self.view.last_board = self.model.get_copy_board_state()

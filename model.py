@@ -1,10 +1,8 @@
 """
     Module for managing and manipulating data
 """
-from unittest import case
 from view import View
 from controller import Controller
-import pieces
 from pieces import Rook, Horse, Bishop, Pawn, King, Queen
 
 
@@ -88,17 +86,16 @@ class Model:
                         self.board_state[63] = None
 
                     if goal_pos == 58:
-                        self.board_state[goal_pos+1] = self.board_state[56]
+                        self.board_state[goal_pos + 1] = self.board_state[56]
                         self.board_state[56] = None
 
                     if goal_pos == 6:
-                        self.board_state[6] = self.board.state[7]
+                        self.board_state[6] = self.board_state[7]
                         self.board_state[0] = None
 
                     if goal_pos == 1 or goal_pos == 2:
-                        self.board_state[goal_pos+1] = self.board_state[0]
+                        self.board_state[goal_pos + 1] = self.board_state[0]
                         self.board_state[0] = None
-
 
                 moved_piece.moved = True
 
@@ -109,12 +106,12 @@ class Model:
                 return True
             else:
                 self.view.invalid_input('Sorry, this move is not legal. Please try again!')
-                self.controller.get_movement_choice()
-                return false
+                self.controller.get_movement_choice(self.view.get_movement_choice())
+                return False
 
         else:
             self.view.invalid_input('There is no piece of your color on this space. Please try again!')
-            self.controller.get_movement_choice()
+            self.controller.get_movement_choice(self.view.get_movement_choice())
             return False
 
     def check_for_king(self):
@@ -149,10 +146,9 @@ class Model:
         else:
             row = kopie[:8]
 
-        if row[0].moved == False and row[4].moved == False and row[7].moved == False:
-            if row[1] == None and row[2] == None and row[3] == None or row[5] == None and row[6] == None:
+        if not row[0].moved and not row[4].moved and not row[7].moved:
+            if row[1] is None and row[2] is None and row[3] is None or row[5] is None and row[6] is None:
                 return True
 
     def check_remis(self):
         pass
-

@@ -78,7 +78,7 @@ class View:
         self.socket.sendall(message.encode())
         message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
         self.socket.sendall(message.encode())
-        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Exit\n'
+        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Login   (5)Exit\n'
         self.socket.sendall(message.encode())
 
         self.model.controller.get_menu_choice(self.get_menu_choice())
