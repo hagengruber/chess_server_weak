@@ -3,6 +3,7 @@
 """
 from view import View
 from controller import Controller
+from database import Database
 from pieces import Rook, Horse, Bishop, Pawn, King, Queen
 
 
@@ -10,10 +11,12 @@ from pieces import Rook, Horse, Bishop, Pawn, King, Queen
 class Model:
     """Class that handles everything for the module"""
 
-    def __init__(self, socket):
+    def __init__(self, socket, lobby, num_of_thread, lock):
+
         self.board_state = list(None for _ in range(64))
         self.view = View(socket)
-        self.controller = Controller(self.view, socket)
+        self.controller = Controller(self.view, socket, lobby, num_of_thread, lock)
+        self.database = Database()
         self.show_symbols = True
         self.correlation = {'A1': 0, 'A2': 1, 'A3': 2, 'A4': 3, 'A5': 4, 'A6': 5, 'A7': 6, 'A8': 7,
                             'B1': 8, 'B2': 9, 'B3': 10, 'B4': 11, 'B5': 12, 'B6': 13, 'B7': 14, 'B8': 15,
@@ -57,6 +60,8 @@ class Model:
             if self.board_state[_] is not None:
                 self.pieces.append(self.board_state[_])
 
+        self.check_rochade()
+
     def move_piece(self, start_pos, goal_pos, update=True):
         """Move a piece to a given position if the move is legal"""
 
@@ -74,20 +79,42 @@ class Model:
                 moved_piece.position = goal_pos
                 if type(moved_piece) == Pawn:
                     if moved_piece.upgrade():
-                        self.board_state[goal_pos] = Queen(self.currently_playing, goal_pos, model)
+                        self.board_state[goal_pos] = Queen(
+                            self.currently_playing, goal_pos, model)
+
+                if type(moved_piece) == King and self.check_rochade:
+                    if goal_pos == 62:
+                        self.board_state[61] = self.board_state[63]
+                        self.board_state[63] = None
+
+                    if goal_pos == 58:
+                        self.board_state[goal_pos + 1] = self.board_state[56]
+                        self.board_state[56] = None
+
+                    if goal_pos == 6:
+                        self.board_state[6] = self.board_state[7]
+                        self.board_state[0] = None
+
+                    if goal_pos == 1 or goal_pos == 2:
+                        self.board_state[goal_pos + 1] = self.board_state[0]
+                        self.board_state[0] = None
+
                 moved_piece.moved = True
+
                 if killed_piece is not None:
                     self.pieces.remove(killed_piece)
                 if update:
                     self.view.update_board()
+                return True
             else:
-                self.controller.print('Sorry, this move is not legal. Please try again!')
-                self.controller.get_movement_choice()
-                if update:
-                    self.view.update_board()
+                self.view.invalid_input('Sorry, this move is not legal. Please try again!')
+                self.controller.get_movement_choice(self.view.get_movement_choice())
+                return False
+
         else:
-            self.controller.print('There is no piece of your color on this space. Please try again!')
-            self.controller.get_movement_choice()
+            self.view.invalid_input('There is no piece of your color on this space. Please try again!')
+            self.controller.get_movement_choice(self.view.get_movement_choice())
+            return False
 
     def check_for_king(self):
         """Check whether the king of the currently playing team is alive or not """
@@ -110,3 +137,31 @@ class Model:
             temp.append(i)
 
         return temp
+
+    def check_rochade(self):
+        """Returns True when Rochade is possible"""
+
+        kopie = self.get_copy_board_state()
+
+        if self.currently_playing == "White":
+            row = kopie[56:]
+        else:
+            row = kopie[:8]
+
+        if not row[0].moved and not row[4].moved and not row[7].moved:
+            if row[1] is None and row[2] is None and row[3] is None or row[5] is None and row[6] is None:
+                return True
+
+    def check_remis(self):
+        pass
+
+    def recalculate_elo(self, victor_id, loser_id):
+        victor_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + victor_id)
+        loser_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + loser_id)
+        elo_difference = max(victor_elo, loser_elo) - min(victor_elo, loser_elo)
+        elo_difference = elo_difference / 400
+        expected_value = 1 / (1 + 10**elo_difference)
+        changed_elo = victor_elo + 20 * (1 - expected_value)
+        elo_change = changed_elo - victor_elo
+        self.database.add_elo(victor_id, elo_change)
+        self.database.remove_elo(loser_id, elo_change)
