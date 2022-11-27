@@ -3,6 +3,7 @@
 """
 from view import View
 from controller import Controller
+from database import Database
 from pieces import Rook, Horse, Bishop, Pawn, King, Queen
 
 
@@ -15,6 +16,8 @@ class Model:
         self.board_state = list(None for _ in range(64))
         self.view = View(socket)
         self.controller = Controller(self.view, socket, lobby, num_of_thread, lock)
+        self.controller = Controller(self.view, socket)
+        self.database = Database()
         self.show_symbols = True
         self.correlation = {'A1': 0, 'A2': 1, 'A3': 2, 'A4': 3, 'A5': 4, 'A6': 5, 'A7': 6, 'A8': 7,
                             'B1': 8, 'B2': 9, 'B3': 10, 'B4': 11, 'B5': 12, 'B6': 13, 'B7': 14, 'B8': 15,
@@ -152,3 +155,14 @@ class Model:
 
     def check_remis(self):
         pass
+
+    def recalculate_elo(self, victor_id, loser_id):
+        victor_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + victor_id)
+        loser_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + loser_id)
+        elo_difference = max(victor_elo, loser_elo) - min(victor_elo, loser_elo)
+        elo_difference = elo_difference / 400
+        expected_value = 1 / (1 + 10**elo_difference)
+        changed_elo = victor_elo + 20 * (1 - expected_value)
+        elo_change = changed_elo - victor_elo
+        self.database.add_elo(victor_id, elo_change)
+        self.database.remove_elo(loser_id, elo_change)
