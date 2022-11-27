@@ -81,14 +81,16 @@ class Model:
                     self.pieces.remove(killed_piece)
                 if update:
                     self.view.update_board()
+                return True
             else:
                 self.view.print('Sorry, this move is not legal. Please try again!')
-                self.controller.get_movement_choice()
+                return False
                 if update:
                     self.view.update_board()
         else:
             self.view.print('There is no piece of your color on this space. Please try again!')
-            self.controller.get_movement_choice()
+            print("Current Color: " + str(self.currently_playing) + " Pieces Color: " + str(moved_piece.colour))
+            return False
 
     def check_for_king(self):
         """Check whether the king of the currently playing team is alive or not """

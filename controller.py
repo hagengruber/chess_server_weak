@@ -23,14 +23,14 @@ def get_files(i):
 class Controller:
     """Class that handles everything for the module"""
 
-    def __init__(self, view, socket, lobby, num_of_thread, lock):
+    def __init__(self, view, socket, games, num_of_thread, lock):
         self.socket = socket
         self.model = None
         self.view = view
         self.ai = None
         self.user_ai = None
         self.load_game = False
-        self.lobby = lobby
+        self.games = games
         self.user = {'username': None, 'num_of_thread': num_of_thread, 'game_queue': None, 'color': '', 'enemy': ''}
         self.lock = lock
 
@@ -52,17 +52,9 @@ class Controller:
             return
 
         con = database.Database()
-        # ToDo: Kommentare wieder hinzufügen, ist nur für Development Zwecke
-        #mail = self.view.input("email address: ")
-        #password = self.view.input("password: ")
-        # ToDo: LÖSCHE CODE
+
         mail = self.view.input("email address: ")
-        if mail == '1':
-            mail = 'florian.hagengruber@stud.th-deg.de'
-            password = 'aPassword'
-        else:
-            mail = 'mail@stud.th-deg.de'
-            password = 'aPassword'
+        password = self.view.input("password: ")
 
         res = con.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
@@ -206,15 +198,15 @@ class Controller:
 
         self.lock.acquire()
 
-        temp = self.get_queue_content(self.lobby, safe_mode=False)
+        temp = self.get_queue_content(self.games, safe_mode=False)
 
         if temp is None:
-            self.write_queue_content(self.lobby, {'lobby': [], 'games': []})
+            self.write_queue_content(self.games, {'lobby': [], 'games': []})
             temp = {'lobby': [], 'games': []}
 
         temp['lobby'].append(self.user)
 
-        self.write_queue_content(self.lobby, temp, safe_mode=False)
+        self.write_queue_content(self.games, temp, safe_mode=False)
 
         self.lock.release()
 
@@ -222,8 +214,12 @@ class Controller:
 
             self.lock.acquire()
 
-            temp = self.get_queue_content(self.lobby, safe_mode=False)
+            temp = self.get_queue_content(self.games, safe_mode=False)
             join = False
+
+            if temp is None:
+                self.lock.release()
+                continue
 
             games = temp['games']
 
@@ -238,19 +234,25 @@ class Controller:
                 self.view.print("Join successful\n")
                 break
 
-    def get_queue_content(self, queue, safe_mode=True):
-        if queue.qsize() > 0:
+    def get_queue_content(self, queue, safe_mode=True, release_lock=True):
 
-            if safe_mode:
-                self.lock.acquire()
+        if safe_mode:
+            self.lock.acquire()
 
+        status = queue.empty()
+
+        if not status:
             temp = queue.get()
             queue.put(temp)
 
-            if safe_mode:
+            if safe_mode and release_lock:
                 self.lock.release()
 
             return temp
+
+        if safe_mode and release_lock:
+            self.lock.release()
+
         return None
 
     def write_queue_content(self, queue, content, override=True, safe_mode=True):
@@ -259,7 +261,7 @@ class Controller:
             self.lock.acquire()
 
         if override:
-            while queue.qsize() != 0:
+            while not queue.empty():
                 queue.get()
             old_content = []
         else:
@@ -271,6 +273,9 @@ class Controller:
 
         for i in old_content:
             queue.put(i)
+
+        if queue.empty():
+            print("QUEUE WURDE OHNE INHALT BESCHRIEBEN")
 
         if safe_mode:
             self.lock.release()
@@ -323,8 +328,11 @@ class Controller:
     def coop(self):
 
         self.init_board()
+        temp = None
 
-        temp = self.get_queue_content(self.lobby)
+        while temp is None:
+            temp = self.get_queue_content(self.games)
+
         games = temp['games']
 
         for i in games:
@@ -341,20 +349,26 @@ class Controller:
 
         self.model.currently_playing = 'White'
 
+        print_wait = True
+
         while self.model.check_for_king():
 
-            self.lock.acquire()
+            temp = None
 
-            temp = self.get_queue_content(self.lobby, safe_mode=False)
+            while temp is None:
+                temp = self.get_queue_content(self.games)
+
             games = temp['games']
 
             for i in range(len(games)):
                 if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
                     if games[i]['currently_playing'] == self.user['username']:
 
-                        print("Check last move:")
+                        print("Queue: " + str(temp))
+
+                        print_wait = True
+
                         if games[i]['last_move'] is not None:
-                            print("Check last move 2")
                             if games[i]['White'] == self.user['username']:
                                 self.model.currently_playing = 'Black'
                             else:
@@ -362,23 +376,19 @@ class Controller:
 
                             self.get_movement_choice(move=games[i]['last_move'], update=False)
 
-                        print("Check last move end")
-
                         self.model.currently_playing = self.user['color']
 
                         self.view.update_board()
 
-                        last_move = self.get_movement_choice()
-                        print("Last move: " + str(last_move))
-                        games[i]['last_move'] = last_move
+                        games[i]['last_move'] = self.get_movement_choice()
                         games[i]['currently_playing'] = self.user['enemy']
 
                         temp['games'] = games
-                        self.write_queue_content(self.lobby, temp, safe_mode=False)
+                        self.write_queue_content(self.games, temp, safe_mode=True)
                     else:
-                        self.view.print("The other Player is thinking...")
-
-            self.lock.release()
+                        if print_wait:
+                            self.view.print("The other Player is thinking...")
+                            print_wait = False
 
     def get_symbol_preference(self):
         """Asks the user whether he wants to use symbols(True) or letters(False)"""
@@ -416,7 +426,7 @@ class Controller:
 
         if len(choice) < 4:
             self.view.print('Your Choice is not valid. Please try again!')
-            self.get_movement_choice()
+            return self.get_movement_choice()
         else:
             lines = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
             columns = ['1', '2', '3', '4', '5', '6', '7', '8']
@@ -424,14 +434,15 @@ class Controller:
             goal_pos = choice[-2:]
             if start_pos[0] in lines and goal_pos[0] in lines and start_pos[1] in columns and goal_pos[1] in columns:
 
-                print("Move: " + str(choice))
+                check_move = self.model.move_piece(self.model.correlation[start_pos], self.model.correlation[goal_pos],
+                                                   update=update)
+                if not check_move:
+                    return self.get_movement_choice()
 
-                self.model.move_piece(self.model.correlation[start_pos], self.model.correlation[goal_pos],
-                                      update=update)
                 return choice
             else:
                 self.view.print('Your Choice is not valid. Please try again!')
-                self.get_movement_choice()
+                return self.get_movement_choice()
 
     # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):

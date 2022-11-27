@@ -40,6 +40,9 @@ class App:
 
     def run(self):
         """Handles connection requests"""
+
+        m.Process(target=App.check_launch_lobby, args=(self.lock, self.lobby,)).start()
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((self.host, self.port))
             print("Server is listening on " + str(self.ip) + " with Port " + str(self.port))
@@ -52,74 +55,82 @@ class App:
                     self.threads += 1
                     m.Process(target=App.listen, args=(s, self.connect, self.lobby, self.threads, self.lock)).start()
 
-                self.check_launch_lobby()
+    @staticmethod
+    def check_launch_lobby(lock, game):
 
-    def get_queue_content(self, queue, safe_mode=True):
-        if queue.qsize() > 0:
-
-            if safe_mode:
-                self.lock.acquire()
-
-            temp = queue.get()
-            queue.put(temp)
+        def write_queue_content(queue_f, content_f, lock_f, override=True, safe_mode=True):
 
             if safe_mode:
-                self.lock.release()
+                lock_f.acquire()
 
-            return temp
-        return None
+            if override:
+                while not queue_f.empty():
+                    queue_f.get()
+                old_content = []
+            else:
+                old_content = []
+                while queue_f.qsize() != 0:
+                    old_content.append(queue_f.get())
 
-    def write_queue_content(self, queue, content, override=True, safe_mode=True):
+            old_content.append(content_f)
 
-        if safe_mode:
-            self.lock.acquire()
+            for i in old_content:
+                queue_f.put(i)
 
-        if override:
-            while queue.qsize() != 0:
-                queue.get()
-            old_content = []
-        else:
-            old_content = []
-            while queue.qsize() != 0:
-                old_content.append(queue.get())
+            if safe_mode:
+                lock_f.release()
 
-        old_content.append(content)
+        def get_queue_content(queue_f, lock_f, safe_mode=True):
 
-        for i in old_content:
-            queue.put(i)
+            if safe_mode:
+                lock_f.acquire()
 
-        if safe_mode:
-            self.lock.release()
+            if not queue_f.empty():
 
-    def check_launch_lobby(self):
+                temp_f = queue_f.get()
+                queue_f.put(temp_f)
 
-        self.lock.acquire()
+                if safe_mode:
+                    lock_f.release()
 
-        temp = self.get_queue_content(self.lobby, safe_mode=False)
+                return temp_f
 
-        if temp['lobby'] is None:
-            return
+            if safe_mode:
+                lock_f.release()
 
-        if len(temp['lobby']) >= 2:
+            return None
 
-            games = temp['games']
-            lobby = temp['lobby']
+        while True:
 
-            games.append(
-                {'player1': temp['lobby'][0]['username'], 'player2': temp['lobby'][1]['username'],
-                 'White': temp['lobby'][0]['username'], 'Black': temp['lobby'][1]['username'], 'last_move': None,
-                 'currently_playing': temp['lobby'][0]['username']})
+            temp = get_queue_content(game, lock)
 
-            lobby.remove(lobby[0])
-            lobby.remove(lobby[0])
+            if temp is None:
+                continue
 
-            temp['lobby'] = lobby
-            temp['games'] = games
+            if temp['lobby'] is None:
+                continue
 
-            self.write_queue_content(self.lobby, temp, override=True, safe_mode=False)
-            print("Inhalt Lobby: " + str(self.get_queue_content(self.lobby, safe_mode=False)))
+            lock.acquire()
 
-        self.lock.release()
+            if len(temp['lobby']) >= 2:
+
+                games = temp['games']
+                lobby = temp['lobby']
+
+                games.append(
+                    {'player1': temp['lobby'][0]['username'], 'player2': temp['lobby'][1]['username'],
+                     'White': temp['lobby'][0]['username'], 'Black': temp['lobby'][1]['username'], 'last_move': None,
+                     'currently_playing': temp['lobby'][0]['username']})
+
+                lobby.remove(lobby[0])
+                lobby.remove(lobby[0])
+
+                temp['lobby'] = lobby
+                temp['games'] = games
+
+                write_queue_content(game, temp, lock, override=True, safe_mode=False)
+
+            lock.release()
 
     @staticmethod
     def listen(s, connect, lobby, threads, lock):
