@@ -291,8 +291,13 @@ class Controller:
             if len(input) == 1:
 
                 if input == '1':
-                    self.join_lobby()
-                    self.coop()
+                    if self.user['username'] is None:
+                        self.view.clear_console()
+                        self.view.print_menu(sub_message="\nLogin is required to play games with other players\n\n")
+                        self.get_menu_choice(self.view.get_menu_choice())
+                    else:
+                        self.join_lobby()
+                        self.coop()
 
                 elif input == '2':
                     self.model.ai = True
