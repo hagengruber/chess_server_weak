@@ -121,12 +121,15 @@ class Controller:
         m = Mail()
         code = Mail.create_code()
 
+        erg = m.send_mail(mail, code)
+
+        if erg is not None:
+            self.view.print(erg)
+            return erg
+
         self.db.add_player(mail, password, username, code)
 
-        m.send_mail(mail, code)
-
-        self.view.print("User registration was successful\n")
-        self.view.print("The activation Code for your account was send to your email address\n")
+        return None
 
     def init_board(self, return_board=False):
         if not self.load_game:
@@ -309,15 +312,17 @@ class Controller:
                 elif input == '4':
                     self.login()
                     self.view.clear_console()
-                    self.view.print("Login successful\n")
-                    self.view.print_menu()
+                    self.view.print_menu(sub_message="\nLogin successful\n\n")
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif input == '5':
-                    self.registration()
+                    erg = self.registration()
                     self.view.clear_console()
-                    self.view.print("Code was successful sent\n")
-                    self.view.print_menu()
+                    if erg is None:
+                        self.view.print_menu(sub_message="\nCode was sent to your email address\n\n")
+                    else:
+                        self.view.print_menu(sub_message="\n" + erg + "\n\n")
+
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif input == '6':

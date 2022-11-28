@@ -35,10 +35,17 @@ class Mail:
         msg['Subject'] = subject
         msg['From'] = self.sender
 
-        conn = SMTP(self.SMTPServer)
-        conn.set_debuglevel(False)
-        conn.login(self.USERNAME, self.PASSWORD)
+        try:
+
+            conn = SMTP(self.SMTPServer)
+            conn.set_debuglevel(False)
+            conn.login(self.USERNAME, self.PASSWORD)
+        except TimeoutError:
+            return "Failed to send email. Make sure that you are connected to the Internet and your " \
+                   "Firewall allows smtp connections"
+
         try:
             conn.sendmail(self.sender, destination, msg.as_string())
         finally:
             conn.quit()
+            return None

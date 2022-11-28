@@ -311,7 +311,7 @@ class AI:
         for i in processes:
             i.join()
             output.update()
-            # self.view.update_board()
+            self.view.update_board()
             self.view.print('\n' + str(output))
 
         for _ in range(queue.qsize()):
