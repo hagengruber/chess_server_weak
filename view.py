@@ -66,7 +66,7 @@ class View:
         """Clear the console of unnecessary stuff"""
         self.socket.sendall("\033[H\033[J".encode())
 
-    def print_menu(self, sub_message=None):
+    def print_menu(self, login, sub_message=None):
         """Display the starting menu and tell 'model' to ask the user what he wants to do"""
 
         message = pyfiglet.figlet_format("Chess Online")
@@ -76,8 +76,12 @@ class View:
         self.socket.sendall(message.encode())
         message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
         self.socket.sendall(message.encode())
-        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Login   (5)Registration   (6)Logout   ' \
-                  '(7)Exit\n'
+
+        if login:
+            message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Logout   (5)Exit\n'
+        else:
+            message = '(1)Login   (2)Registration   (3)Exit\n'
+
         self.socket.sendall(message.encode())
 
         if sub_message is not None:

@@ -41,7 +41,7 @@ class App:
         model.view.clear_console()
 
         try:
-            model.view.print_menu()
+            model.view.print_menu(False)
         finally:
             # If a User forces the disconnect (e.g. with an error) the mutex may be still locked
             try:

@@ -37,20 +37,22 @@ class Controller:
         self.user = {'username': None, 'num_of_thread': num_of_thread, 'game_queue': None, 'color': '', 'enemy': ''}
         self.lock = lock
         self.db = database.Database()
+        self.is_logged_in = False
 
     def logout(self):
         """Handles the logout of the user"""
 
-        if self.user['username'] is None:
+        if not self.is_logged_in:
             return "You are already logged out"
         else:
             self.user['username'] = None
+            self.is_logged_in = False
             return "Logout successful"
 
     def login(self):
         """Handles the login of the user"""
 
-        if self.user['username'] is not None:
+        if self.is_logged_in:
             return "You are already logged in as " + str(self.user['username'])
 
         mail = self.view.input("email address: ")
@@ -69,6 +71,8 @@ class Controller:
                 return "Wrong activation Code"
 
         self.user['username'] = res[0][3]
+        self.is_logged_in = True
+
         return "Login successful"
 
     def registration(self):
@@ -190,7 +194,7 @@ class Controller:
             self.start_game()
         elif user_input.lower() == 'n' or user_input.lower() == 'no':
             self.view.clear_console()
-            self.view.print_menu()
+            self.view.print_menu(self.is_logged_in)
         else:
             self.view.invalid_input('Please answer with "yes" or "no"')
             self.get_after_game_choice(self.view.get_after_game_choice())
@@ -303,19 +307,41 @@ class Controller:
 
         print("Input: " + str(user_input))
 
+        if self.is_logged_in:
+            login = False
+        else:
+            login = True
+
         if int(user_input):
             if len(user_input) == 1:
 
+                if self.is_logged_in:
+                    if user_input == '4':
+                        user_input = '6'
+                    elif user_input == '5':
+                        user_input = '7'
+                else:
+                    if user_input == '1':
+                        user_input = '4'
+                    elif user_input == '2':
+                        user_input = '5'
+                    elif user_input == '3':
+                        user_input = '7'
+                    else:
+                        user_input = '-1'
+
                 if user_input == '1':
-                    if self.user['username'] is None:
+                    # User vs User
+                    if not self.is_logged_in:
                         self.view.clear_console()
-                        self.view.print_menu(sub_message="\nLogin is required to play games with other players\n\n")
+                        self.view.print_menu(self.is_logged_in, sub_message="\nLogin is required to play games with other players\n\n")
                         self.get_menu_choice(self.view.get_menu_choice())
                     else:
                         self.join_lobby()
                         self.coop()
 
                 elif user_input == '2':
+                    # User vs ai
                     self.model.ai = True
                     self.user_ai = AI(self.model, self.view,
                                       "Black", "White", self)
@@ -325,34 +351,39 @@ class Controller:
                     self.start_game()
 
                 elif user_input == '3':
+                    # load game
                     cont = self.load()
                     if cont:
                         # self.view.update_board()
                         self.start_game()
 
                 elif user_input == '4':
+                    # login
                     message = self.login()
                     self.view.clear_console()
-                    self.view.print_menu(sub_message="\n" + message + "\n\n")
+                    self.view.print_menu(self.is_logged_in, sub_message="\n" + message + "\n\n")
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif user_input == '5':
+                    # registration
                     erg = self.registration()
                     self.view.clear_console()
                     if erg is None:
-                        self.view.print_menu(sub_message="\nCode was sent to your email address\n\n")
+                        self.view.print_menu(self.is_logged_in, sub_message="\nCode was sent to your email address\n\n")
                     else:
-                        self.view.print_menu(sub_message="\n" + erg + "\n\n")
+                        self.view.print_menu(self.is_logged_in, sub_message="\n" + erg + "\n\n")
 
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif user_input == '6':
+                    # logout
                     message = self.logout()
                     self.view.clear_console()
-                    self.view.print_menu(sub_message="\n" + message + "\n\n")
+                    self.view.print_menu(self.is_logged_in, sub_message="\n" + message + "\n\n")
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif user_input == '7':
+                    # exit
                     self.model.view.clear_console()
                     sys.exit()
 
@@ -392,12 +423,12 @@ class Controller:
             elif move == "S":
                 self.save()
                 self.view.clear_console()
-                self.view.print_menu()
+                self.view.print_menu(self.is_logged_in)
                 return self.get_movement_choice(self.view.get_menu_choice())
 
             elif move == "M":
                 self.view.clear_console()
-                self.view.print_menu()
+                self.view.print_menu(self.is_logged_in)
 
             else:
                 self.view.invalid_input('Please try again!')
