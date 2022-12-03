@@ -11,6 +11,7 @@ from pieces import *
 import database
 import re
 from mail import Mail
+from queue import Empty
 
 
 def get_files(i):
@@ -210,7 +211,7 @@ class Controller:
 
         t = self.get_queue_content(self.games, safe_mode=False)
 
-        self.lock.release()
+        self.release_lock()
 
         self.view.print("Looking for Enemies...")
 
@@ -222,7 +223,7 @@ class Controller:
             join = False
 
             if temp is None:
-                self.lock.release()
+                self.release_lock()
                 continue
 
             games = temp['games']
@@ -232,44 +233,53 @@ class Controller:
                     join = True
                     break
 
-            self.lock.release()
+            self.release_lock()
 
             if join:
                 self.view.print("Join successful\n")
                 break
+
+    def release_lock(self):
+
+        try:
+            self.lock.release()
+        except ValueError:
+            pass
 
     def get_queue_content(self, queue, safe_mode=True, release_lock=True):
 
         if safe_mode:
             self.lock.acquire()
 
-        status = queue.empty()
+        try:
 
-        if not status:
-            temp = queue.get()
+            temp = queue.get_nowait()
             queue.put(temp)
 
-            if safe_mode and release_lock:
-                self.lock.release()
+            if safe_mode:
+                self.release_lock()
 
             return temp
 
-        if safe_mode and release_lock:
-            self.lock.release()
-
-        return None
+        except Empty:
+            if safe_mode:
+                self.release_lock()
+            return None
 
     def write_queue_content(self, queue, content, override=True, safe_mode=True):
-
-        print("Write in Queue: " + str(content))
 
         if safe_mode:
             self.lock.acquire()
 
         if override:
-            while not queue.empty():
-                queue.get()
+            while True:
+                try:
+                    queue.get_nowait()
+                except Empty:
+                    break
+
             old_content = []
+
         else:
             old_content = []
             while queue.qsize() != 0:
@@ -284,10 +294,12 @@ class Controller:
             print("QUEUE WURDE OHNE INHALT BESCHRIEBEN")
 
         if safe_mode:
-            self.lock.release()
+            self.release_lock()
 
     def get_menu_choice(self, input):
         """Gets input from user and processes the input"""
+
+        print("Input: " + str(input))
 
         if int(input):
             if len(input) == 1:
@@ -470,9 +482,14 @@ class Controller:
                 if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
                     if games[i]['currently_playing'] == self.user['username']:
 
+                        print(str(self.user['username']) + " got " + str(temp) + "\n")
+
+                        print("Player " + str(self.user['username']) + " goes in Playmode: " + str(games[i]) + "\n")
+
                         print_wait = True
 
                         if games[i]['last_move'] is not None:
+                            print("Player " + str(self.user['username']) + " moves from Enemy")
                             if games[i]['White'] == self.user['username']:
                                 self.model.currently_playing = 'Black'
                             else:
@@ -485,13 +502,17 @@ class Controller:
                         self.view.update_board()
 
                         last_move = self.get_movement_choice(self.view.get_movement_choice())
-                        print("Last move: " + str(last_move))
+
+                        self.lock.acquire()
+
+                        new_temp = None
+                        while new_temp is None:
+                            new_temp = self.get_queue_content(self.games, safe_mode=False)
+
                         games[i]['last_move'] = last_move
                         games[i]['currently_playing'] = self.user['enemy']
 
-                        temp['games'] = games
-
-                        self.lock.acquire()
+                        new_temp['games'][i] = games[i]
 
                         req = False
                         while not req:
@@ -500,27 +521,23 @@ class Controller:
                             while q is None:
                                 q = self.get_queue_content(self.games, safe_mode=False)
 
-                            print("Q: " + str(q) + "\nUser: " + str(self.user))
+                            print("User " + str(self.user['username']) + " writes in Queue: " + str(temp) + "\n")
 
                             try:
 
                                 if q['games'][i]['currently_playing'] == self.user['enemy']:
                                     req = True
                                 else:
-                                    self.write_queue_content(self.games, temp, safe_mode=False)
+                                    self.write_queue_content(self.games, new_temp, safe_mode=False)
 
                             except IndexError:
-                                self.write_queue_content(self.games, temp, safe_mode=False)
+                                self.write_queue_content(self.games, new_temp, safe_mode=False)
 
                         q = None
                         while q is None:
                             q = self.get_queue_content(self.games, safe_mode=False)
 
-                        self.lock.release()
-
-                        print("QUEUE: " + str(q))
-                        print("TEMP: " + str(temp))
-                        print("User: " + str(self.user))
+                        self.release_lock()
 
                     else:
                         if print_wait:

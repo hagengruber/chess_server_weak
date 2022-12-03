@@ -8,6 +8,7 @@ import multiprocessing as m
 from multiprocessing import Queue
 from multiprocessing import Lock
 from model import Model
+from queue import Empty
 
 
 class App:
@@ -36,7 +37,14 @@ class App:
         model.controller.model = model
         model.view.model = model
         model.view.clear_console()
-        model.view.print_menu()
+
+        try:
+            model.view.print_menu()
+        finally:
+            try:
+                lock.release()
+            except ValueError:
+                pass
 
     def run(self):
         """Handles connection requests"""
@@ -58,6 +66,13 @@ class App:
     @staticmethod
     def check_launch_lobby(lock, game):
 
+        def release_lock(lock_f):
+
+            try:
+                lock_f.release()
+            except ValueError:
+                pass
+
         def write_queue_content(queue_f, content_f, lock_f, override=True, safe_mode=True):
 
             if safe_mode:
@@ -78,27 +93,27 @@ class App:
                 queue_f.put(i)
 
             if safe_mode:
-                lock_f.release()
+                release_lock(lock_f)
 
         def get_queue_content(queue_f, lock_f, safe_mode=True):
 
             if safe_mode:
                 lock_f.acquire()
 
-            if not queue_f.empty():
+            try:
 
-                temp_f = queue_f.get()
+                temp_f = queue_f.get_nowait()
                 queue_f.put(temp_f)
 
                 if safe_mode:
-                    lock_f.release()
+                    release_lock(lock_f)
 
                 return temp_f
 
-            if safe_mode:
-                lock_f.release()
-
-            return None
+            except Empty:
+                if safe_mode:
+                    release_lock(lock_f)
+                return None
 
         while True:
 
@@ -130,7 +145,7 @@ class App:
 
                 write_queue_content(game, temp, lock, override=True, safe_mode=False)
 
-            lock.release()
+            release_lock(lock)
 
     @staticmethod
     def listen(s, connect, lobby, threads, lock):
@@ -140,6 +155,7 @@ class App:
             print("Server is connected with port " + str(addr))
             welcome = "Hello. You are connected to the Chess Server. Your port is " + str(addr[1]) + '\n\n'
             conn.sendall(welcome.encode())
+
             m.Process(target=App.connect_and_run, args=(conn, lobby, threads, lock)).start()
 
 
