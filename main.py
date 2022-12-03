@@ -13,6 +13,8 @@ from queue import Empty
 
 class App:
 
+    """Main function"""
+
     def __init__(self):
         self.ip = socket.gethostbyname(socket.gethostname())
         self.host = self.ip
@@ -41,6 +43,7 @@ class App:
         try:
             model.view.print_menu()
         finally:
+            # If a User forces the disconnect (e.g. with an error) the mutex may be still locked
             try:
                 lock.release()
             except ValueError:
@@ -66,7 +69,11 @@ class App:
     @staticmethod
     def check_launch_lobby(lock, game):
 
+        """Checks if two users a in the Lobby and creates a game room"""
+
+        # built-in function because the function has to be static due to the pickle error
         def release_lock(lock_f):
+            """Release the mutex"""
 
             try:
                 lock_f.release()
@@ -74,13 +81,18 @@ class App:
                 pass
 
         def write_queue_content(queue_f, content_f, lock_f, override=True, safe_mode=True):
+            """Writes content in the queue"""
 
+            # the mutex may be locked before the function call
             if safe_mode:
                 lock_f.acquire()
 
             if override:
-                while not queue_f.empty():
-                    queue_f.get()
+                while True:
+                    try:
+                        queue_f.get_nowait()
+                    except Empty:
+                        break
                 old_content = []
             else:
                 old_content = []
@@ -96,6 +108,7 @@ class App:
                 release_lock(lock_f)
 
         def get_queue_content(queue_f, lock_f, safe_mode=True):
+            """Returns the content of the queue"""
 
             if safe_mode:
                 lock_f.acquire()
@@ -117,6 +130,7 @@ class App:
 
         while True:
 
+            # Origin Loop
             temp = get_queue_content(game, lock)
 
             if temp is None:
@@ -132,6 +146,7 @@ class App:
                 games = temp['games']
                 lobby = temp['lobby']
 
+                # Creates a Game Room
                 games.append(
                     {'player1': temp['lobby'][0]['username'], 'player2': temp['lobby'][1]['username'],
                      'White': temp['lobby'][0]['username'], 'Black': temp['lobby'][1]['username'], 'last_move': None,
@@ -149,6 +164,7 @@ class App:
 
     @staticmethod
     def listen(s, connect, lobby, threads, lock):
+        """Waits for a connection from a Client and starts the game loop"""
         conn, addr = s.accept()
         with conn:
             connect.put(True)

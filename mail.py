@@ -18,6 +18,7 @@ class Mail:
 
     @staticmethod
     def create_code():
+        """Creates Code for login"""
         # ToDo: Für starke Version: Code ist Bruteforcebar!
         return random.randint(1000, 99999)
 
@@ -36,7 +37,6 @@ class Mail:
         msg['From'] = self.sender
 
         try:
-
             conn = SMTP(self.SMTPServer)
             conn.set_debuglevel(False)
             conn.login(self.USERNAME, self.PASSWORD)
