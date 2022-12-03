@@ -35,6 +35,7 @@ class App:
         model = Model(conn, lobby, threads, lock)
         model.controller.model = model
         model.view.model = model
+        model.view.clear_console()
         model.view.print_menu()
 
     def run(self):

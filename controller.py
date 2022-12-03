@@ -40,19 +40,16 @@ class Controller:
     def logout(self):
 
         if self.user['username'] is None:
-            self.view.print("You are already logged out\n")
-            return
+            return "You are already logged out"
         else:
             self.user['username'] = None
-            self.view.print("Logout successful\n")
-            return
+            return "Logout successful"
 
     def login(self):
         """user login"""
 
         if self.user['username'] is not None:
-            self.view.print("You are already logged in as " + str(self.user['username']) + "\n")
-            return
+            return "You are already logged in as " + str(self.user['username'])
 
         mail = self.view.input("email address: ")
         password = self.view.input("password: ")
@@ -60,20 +57,17 @@ class Controller:
         res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
         if len(res) == 0:
-            self.view.print("Invalid credentials\n")
-            return
+            return "Invalid credentials"
 
         if res[0][9] is not None:
             code = self.view.input("Enter your activation Code: ")
             if code == res[0][9]:
                 self.db.update_general_data('Spieler', '"aktivierungscode"', 'NULL', 'WHERE mail="' + mail + '";')
             else:
-                self.view.print("Wrong activation Code\n")
-                return
+                return "Wrong activation Code"
 
         self.user['username'] = res[0][3]
-        self.view.print("Login successful\n")
-        return
+        return "Login successful"
 
     def registration(self):
         """registers a User"""
@@ -200,7 +194,9 @@ class Controller:
     def join_lobby(self):
         self.view.print("Join Lobby...\n")
 
+        print("Acquire Lock")
         self.lock.acquire()
+        print("Success")
 
         temp = self.get_queue_content(self.games, safe_mode=False)
 
@@ -212,7 +208,11 @@ class Controller:
 
         self.write_queue_content(self.games, temp, safe_mode=False)
 
+        t = self.get_queue_content(self.games, safe_mode=False)
+
         self.lock.release()
+
+        self.view.print("Looking for Enemies...")
 
         while True:
 
@@ -260,6 +260,8 @@ class Controller:
         return None
 
     def write_queue_content(self, queue, content, override=True, safe_mode=True):
+
+        print("Write in Queue: " + str(content))
 
         if safe_mode:
             self.lock.acquire()
@@ -315,9 +317,9 @@ class Controller:
                         self.start_game()
 
                 elif input == '4':
-                    self.login()
+                    message = self.login()
                     self.view.clear_console()
-                    self.view.print_menu(sub_message="\nLogin successful\n\n")
+                    self.view.print_menu(sub_message="\n" + message + "\n\n")
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif input == '5':
@@ -331,6 +333,12 @@ class Controller:
                     self.get_menu_choice(self.view.get_menu_choice())
 
                 elif input == '6':
+                    message = self.logout()
+                    self.view.clear_console()
+                    self.view.print_menu(sub_message="\n" + message + "\n\n")
+                    self.get_menu_choice(self.view.get_menu_choice())
+
+                elif input == '7':
                     self.model.view.clear_console()
                     sys.exit()
 
@@ -360,6 +368,7 @@ class Controller:
         """Gets input from user during a game and processes the input"""
 
         move = move.upper()
+
         if len(move) == 1:
 
             if move == "Q":
@@ -415,9 +424,9 @@ class Controller:
                 start_pos = move[:2]
                 goal_pos = move[-2:]
 
-                self.model.move_piece(
-                    self.model.correlation[start_pos], self.model.correlation[goal_pos], update=update)
-                return move
+                return self.model.move_piece(
+                    self.model.correlation[start_pos], self.model.correlation[goal_pos], move=move, update=update)
+
             else:
                 self.view.invalid_input(' Please try again!')
                 return self.get_movement_choice(self.view.get_movement_choice())
@@ -461,8 +470,6 @@ class Controller:
                 if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
                     if games[i]['currently_playing'] == self.user['username']:
 
-                        print("Queue: " + str(temp))
-
                         print_wait = True
 
                         if games[i]['last_move'] is not None:
@@ -477,15 +484,50 @@ class Controller:
 
                         self.view.update_board()
 
-                        games[i]['last_move'] = self.get_movement_choice(self.view.get_movement_choice())
+                        last_move = self.get_movement_choice(self.view.get_movement_choice())
+                        print("Last move: " + str(last_move))
+                        games[i]['last_move'] = last_move
                         games[i]['currently_playing'] = self.user['enemy']
 
                         temp['games'] = games
-                        self.write_queue_content(self.games, temp, safe_mode=True)
+
+                        self.lock.acquire()
+
+                        req = False
+                        while not req:
+
+                            q = None
+                            while q is None:
+                                q = self.get_queue_content(self.games, safe_mode=False)
+
+                            print("Q: " + str(q) + "\nUser: " + str(self.user))
+
+                            try:
+
+                                if q['games'][i]['currently_playing'] == self.user['enemy']:
+                                    req = True
+                                else:
+                                    self.write_queue_content(self.games, temp, safe_mode=False)
+
+                            except IndexError:
+                                self.write_queue_content(self.games, temp, safe_mode=False)
+
+                        q = None
+                        while q is None:
+                            q = self.get_queue_content(self.games, safe_mode=False)
+
+                        self.lock.release()
+
+                        print("QUEUE: " + str(q))
+                        print("TEMP: " + str(temp))
+                        print("User: " + str(self.user))
+
                     else:
                         if print_wait:
                             self.view.print("The other Player is thinking...")
                             print_wait = False
+
+                    break
 
     # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):
