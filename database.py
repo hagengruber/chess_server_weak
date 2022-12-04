@@ -23,7 +23,7 @@ class Database:
     def add_player(self, mail, password, username, code):
         """Adds a player to the 'Spieler' table"""
         self.open_connection()
-        self.cur.execute("""INSERT INTO Spieler (mail, passwort, nutzername, aktivierungscode) VALUES
+        self.cur.executescript("""INSERT INTO Spieler (mail, passwort, nutzername, aktivierungscode) VALUES
                             ('%s', '%s', '%s', '%s')""" % (mail, password, username, code))
         self.con.commit()
         self.close_connection()
