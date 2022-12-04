@@ -305,13 +305,6 @@ class Controller:
     def get_menu_choice(self, user_input):
         """Gets input from user and processes the input"""
 
-        print("Input: " + str(user_input))
-
-        if self.is_logged_in:
-            login = False
-        else:
-            login = True
-
         if int(user_input):
             if len(user_input) == 1:
 
@@ -334,11 +327,14 @@ class Controller:
                     # User vs User
                     if not self.is_logged_in:
                         self.view.clear_console()
-                        self.view.print_menu(self.is_logged_in, sub_message="\nLogin is required to play games with other players\n\n")
+                        self.view.print_menu(self.is_logged_in,
+                                             sub_message="\nLogin is required to play games with other players\n\n")
                         self.get_menu_choice(self.view.get_menu_choice())
                     else:
                         self.join_lobby()
                         self.coop()
+                        # ToDo: Nach Spielende Ergebnis auswerten
+                        print("Ende")
 
                 elif user_input == '2':
                     # User vs ai
@@ -417,16 +413,19 @@ class Controller:
         if len(move) == 1:
 
             if move == "Q":
+                # ToDo: Aus Spiel gehen ist das gleiche wie aufgeben
                 self.model.view.clear_console()
                 sys.exit()
 
             elif move == "S":
+                # ToDo: Darf während pvp nicht möglich sein
                 self.save()
                 self.view.clear_console()
                 self.view.print_menu(self.is_logged_in)
                 return self.get_movement_choice(self.view.get_menu_choice())
 
             elif move == "M":
+                # ToDo: Darf während pvp nicht möglich sein
                 self.view.clear_console()
                 self.view.print_menu(self.is_logged_in)
 
@@ -452,13 +451,15 @@ class Controller:
                 self.view.print("aufgeben")
                 # aufgeben das gleich wie Quit?
 
+            # ToDo: Remis auf Englisch -> Draw
             if move[2:] == "REMIS":
-                self.view.print("aufgeben")
-                """ 
-                        wie wird das Remis an den andern übertragen?
-                        Wie wird das Remisangebot vermerkt?
-                        
-                        """
+                draw = self.ask_draw()
+                if not draw:
+                    self.view.print("Draw was rejected")
+                    return None
+                else:
+                    # ToDo: Wenn Remis entsteht -> Spielende
+                    pass
 
             if move[2:] == "HELP":
                 self.view.get_help()
@@ -470,11 +471,71 @@ class Controller:
                 goal_pos = move[-2:]
 
                 return self.model.move_piece(
-                    self.model.correlation[start_pos], self.model.correlation[goal_pos], move=move, update=update)
+                    self.model.correlation[start_pos], self.model.correlation[goal_pos],
+                    move=move, update=update)
 
             else:
                 self.view.invalid_input(' Please try again!')
                 return self.get_movement_choice(self.view.get_movement_choice())
+
+    def ask_draw(self):
+
+        """Asks the opponent for Draw and returns the answer"""
+
+        self.view.print("Ask the opponent for Draw...")
+
+        temp = None
+        self.lock.acquire()
+
+        while temp is None:
+            temp = self.get_queue_content(self.games, safe_mode=False)
+
+        games = temp['games']
+
+        for i in range(len(games)):
+            if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
+                # if the correct game room was found
+
+                games[i]['remis'] = self.user['username']
+
+                write_success = False
+                temp['games'] = games
+
+                while not write_success:
+                    self.write_queue_content(self.games, temp, safe_mode=False)
+
+                    temp = None
+
+                    while temp is None:
+                        temp = self.get_queue_content(self.games, safe_mode=False)
+
+                    if temp['games'][i]['remis'] is not None:
+                        write_success = True
+
+                    self.release_lock()
+                    break
+
+        answer = self.user['username']
+
+        while answer == self.user['username']:
+
+            temp = None
+            while temp is None:
+                temp = self.get_queue_content(self.games, safe_mode=False)
+
+            games = temp['games']
+
+            for i in range(len(games)):
+                if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
+                    # if the correct game room was found
+
+                    if games[i]['remis'] is None:
+                        continue
+
+                    answer = games[i]['remis']
+                    continue
+
+        return answer
 
     def coop(self):
 
@@ -507,7 +568,7 @@ class Controller:
         # if the variable print_wait is True, print (below) "The other player is thinking"
         print_wait = True
 
-        while self.model.check_for_king():
+        while self.model.check_for_king('White') and self.model.check_for_king('Black'):
 
             # Loop until the game is over
             temp = None
@@ -587,7 +648,69 @@ class Controller:
                             self.view.print("The other Player is thinking...")
                             print_wait = False
 
+                        draw = self.check_for_draw()
+
+                        if not draw:
+                            self.release_lock()
+                        else:
+                            # ToDo: Was passiert wenn Spieler remis angenommen hat
+                            pass
+
                     break
+
+    def check_for_draw(self):
+
+        temp = None
+
+        while temp is None:
+            temp = self.get_queue_content(self.games)
+
+        games = temp['games']
+
+        for i in range(len(games)):
+            if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
+                # if the correct game room was found
+
+                if games[i]['remis'] is not None:
+                    answer = False
+
+                    while answer != 'y' and answer != 'n':
+                        # ToDo: Programmabsturz wenn Benutzer nichts eingibt?
+                        answer = self.view.input('\n' + games[i]['remis'] + ' asks for Draw.\nAccept? (y/n)').lower()
+
+                    if answer == 'y':
+                        answer = True
+                    else:
+                        answer = False
+
+                    self.lock.acquire()
+
+                    new_temp = None
+                    while new_temp is None:
+                        new_temp = self.get_queue_content(self.games, safe_mode=False)
+
+                    games[i]['remis'] = answer
+
+                    new_temp['games'][i] = games[i]
+
+                    while True:
+
+                        q = None
+                        while q is None:
+                            q = self.get_queue_content(self.games, safe_mode=False)
+
+                        try:
+
+                            if q['games'][i]['currently_playing'] == self.user['enemy']:
+                                # if the write operation was successful
+                                self.release_lock()
+                                return answer
+                            else:
+                                # if the write operation failed
+                                self.write_queue_content(self.games, new_temp, safe_mode=False)
+
+                        except IndexError:
+                            self.write_queue_content(self.games, new_temp, safe_mode=False)
 
     # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):

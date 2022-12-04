@@ -114,11 +114,14 @@ class Model:
             self.view.invalid_input('There is no piece of your color on this space. Please try again!')
             return self.controller.get_movement_choice(self.view.get_movement_choice())
 
-    def check_for_king(self):
+    def check_for_king(self, color=None):
         """Check whether the king of the currently playing team is alive or not """
+        if color is None:
+            color = self.currently_playing
+
         king_alive = False
         for i in self.pieces:
-            if type(i) == King and i.colour == self.currently_playing:
+            if type(i) == King and i.colour == color:
                 king_alive = True
                 break
         return king_alive

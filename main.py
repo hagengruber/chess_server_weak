@@ -150,7 +150,7 @@ class App:
                 games.append(
                     {'player1': temp['lobby'][0]['username'], 'player2': temp['lobby'][1]['username'],
                      'White': temp['lobby'][0]['username'], 'Black': temp['lobby'][1]['username'], 'last_move': None,
-                     'currently_playing': temp['lobby'][0]['username']})
+                     'currently_playing': temp['lobby'][0]['username'], 'remis': None})
 
                 lobby.remove(lobby[0])
                 lobby.remove(lobby[0])
