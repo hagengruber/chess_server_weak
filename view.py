@@ -66,7 +66,7 @@ class View:
         """Clear the console of unnecessary stuff"""
         self.socket.sendall("\033[H\033[J".encode())
 
-    def print_menu(self):
+    def print_menu(self, login, sub_message=None):
         """Display the starting menu and tell 'model' to ask the user what he wants to do"""
 
         message = pyfiglet.figlet_format("Chess Online")
@@ -74,10 +74,18 @@ class View:
 
         message = '\n\n-Enter a move by giving the coordinates of the starting point and the goal point\n'
         self.socket.sendall(message.encode())
-        message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
+        message = '-During a match you can either enter a legal Move or "--Help" for further commands\n'
         self.socket.sendall(message.encode())
-        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Login   (5)Registration   (6)Exit\n'
+
+        if login:
+            message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Logout   (5)Exit\n'
+        else:
+            message = '(1)Login   (2)Registration   (3)Exit\n'
+
         self.socket.sendall(message.encode())
+
+        if sub_message is not None:
+            self.socket.sendall(sub_message.encode())
 
         self.model.controller.get_menu_choice(self.get_menu_choice())
 
@@ -103,17 +111,15 @@ class View:
         return self.input()
 
     def show_stats(self, data):
-        self.print('Stats of the opponent')
-        self.print('Username: ' + data[0])
-        self.print('Win: ' + data[1])
-        self.print('Loss: ' + data[2])
-        self.print('Remis: ' + data[3])
-        self.print('Elo: ' + data[4])
+        self.print('Stats of the opponent: '+str(data)+'\n')
 
     def get_help(self):
-        self.print("q - Quit\n")
-        self.print("s - Save and Quit Game\n")
-        self.print("m - Main Menue\n")
+        self.print("legal move or\n")
+        self.print("--stats - show opponent Stats\n")
+        self.print("--save - Save and Quit Game\n")
         self.print("--remis - offer Remis\n")
         self.print("--surrender - Surrender\n")
-        self.print("--stats - show opponent Stats\n")
+
+    def accept_remis(self):
+        self.print('Do you want to accept Remis? ')
+        return self.input()
