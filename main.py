@@ -11,6 +11,11 @@ from model import Model
 from queue import Empty
 
 
+# controller queue nicht username uniwuq where name = userid
+# get queue content nicht prarameter ändern
+# registrierung controller 78 def registtration
+# zuerst registrieren, dann login und dann spielen
+
 class App:
 
     """Main function"""

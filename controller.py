@@ -13,6 +13,11 @@ import re
 from mail import Mail
 from queue import Empty
 
+# controller queue nicht username uniwuq where name = userid
+# get queue content nicht prarameter ändern
+# registrierung controller 78 def registtration
+# zuerst registrieren, dann login und dann spielen
+
 
 def get_files(i):
     """Get Files from Directory"""
@@ -174,14 +179,6 @@ class Controller:
                 else:
                     self.model.currently_playing = 'White'
 
-        else:
-            while self.model.check_for_king():
-                self.get_movement_choice(self.view.get_movement_choice())
-                if self.model.currently_playing == 'White':
-                    self.model.currently_playing = 'Black'
-                else:
-                    self.model.currently_playing = 'White'
-
         self.view.print(self.model.currently_playing + ' lost because his king died!')
 
         self.get_after_game_choice(self.view.get_after_game_choice())
@@ -189,14 +186,13 @@ class Controller:
     def get_after_game_choice(self, user_input):
         """Asks the player if he wants to play another game"""
 
-        if user_input.lower() == 'y' or user_input.lower() == 'yes':
+        if self.check_input(user_input) == 1:
             self.view.clear_console()
             self.start_game()
-        elif user_input.lower() == 'n' or user_input.lower() == 'no':
+        elif self.check_input(user_input) == 0:
             self.view.clear_console()
             self.view.print_menu(self.is_logged_in)
         else:
-            self.view.invalid_input('Please answer with "yes" or "no"')
             self.get_after_game_choice(self.view.get_after_game_choice())
 
     def join_lobby(self):
@@ -308,84 +304,85 @@ class Controller:
         if int(user_input):
             if len(user_input) == 1:
 
-                if self.is_logged_in:
-                    if user_input == '4':
-                        user_input = '6'
-                    elif user_input == '5':
-                        user_input = '7'
-                else:
-                    if user_input == '1':
-                        user_input = '4'
-                    elif user_input == '2':
-                        user_input = '5'
-                    elif user_input == '3':
-                        user_input = '7'
+                if type(int(input)) == int:
+
+                    if self.is_logged_in:
+                        if user_input == '4':
+                            user_input = '6'
+                        elif user_input == '5':
+                            user_input = '7'
                     else:
-                        user_input = '-1'
+                        if user_input == '1':
+                            user_input = '4'
+                        elif user_input == '2':
+                            user_input = '5'
+                        elif user_input == '3':
+                            user_input = '7'
+                        else:
+                            user_input = '-1'
 
-                if user_input == '1':
-                    # User vs User
-                    if not self.is_logged_in:
-                        self.view.clear_console()
-                        self.view.print_menu(self.is_logged_in,
-                                             sub_message="\nLogin is required to play games with other players\n\n")
-                        self.get_menu_choice(self.view.get_menu_choice())
-                    else:
-                        self.join_lobby()
-                        self.coop()
-                        # ToDo: Nach Spielende Ergebnis auswerten
-                        print("Ende")
+                    if input == '1':
+                        # User vs User
+                        if not self.is_logged_in:
+                            self.view.clear_console()
+                            self.view.print_menu(self.is_logged_in,
+                                                 sub_message="\nLogin is required to play games with other players\n\n")
+                            self.get_menu_choice(self.view.get_menu_choice())
+                        else:
+                            self.join_lobby()
+                            self.coop()
+                            # ToDo: Nach Spielende Ergebnis auswerten
+                            print("Ende")
 
-                elif user_input == '2':
-                    # User vs ai
-                    self.model.ai = True
-                    self.user_ai = AI(self.model, self.view,
-                                      "Black", "White", self)
-                    self.model.show_symbols = self.get_symbol_preference(
-                        self.view.get_symbol_preference())
+                    elif input == '2':
+                        self.model.ai = True
+                        self.user_ai = AI(self.model, self.view,
+                                          "Black", "White", self)
+                        self.model.show_symbols = self.get_symbol_preference(
+                            self.view.get_symbol_preference())
 
-                    self.start_game()
-
-                elif user_input == '3':
-                    # load game
-                    cont = self.load()
-                    if cont:
-                        # self.view.update_board()
                         self.start_game()
 
-                elif user_input == '4':
-                    # login
-                    message = self.login()
-                    self.view.clear_console()
-                    self.view.print_menu(self.is_logged_in, sub_message="\n" + message + "\n\n")
+                    elif user_input == '3':
+                        # load game
+                        cont = self.load()
+                        if cont:
+                            # self.view.update_board()
+                            self.start_game()
+
+                    elif user_input == '4':
+                        # login
+                        message = self.login()
+                        self.view.clear_console()
+                        self.view.print_menu(self.is_logged_in, sub_message="\n" + message + "\n\n")
+                        self.get_menu_choice(self.view.get_menu_choice())
+
+                    elif user_input == '5':
+                        # registration
+                        erg = self.registration()
+                        self.view.clear_console()
+                        if erg is None:
+                            self.view.print_menu(self.is_logged_in, sub_message="\nCode was sent to your email address\n\n")
+                        else:
+                            self.view.print_menu(self.is_logged_in, sub_message="\n" + erg + "\n\n")
+
+                        self.get_menu_choice(self.view.get_menu_choice())
+
+                    elif user_input == '6':
+                        # logout
+                        message = self.logout()
+                        self.view.clear_console()
+                        self.view.print_menu(self.is_logged_in, sub_message="\n" + message + "\n\n")
+                        self.get_menu_choice(self.view.get_menu_choice())
+
+                    elif user_input == '7':
+                        # exit
+                        self.model.view.clear_console()
+                        sys.exit()
+
+                else:
+                    self.view.invalid_input('Please try again!')
                     self.get_menu_choice(self.view.get_menu_choice())
-
-                elif user_input == '5':
-                    # registration
-                    erg = self.registration()
-                    self.view.clear_console()
-                    if erg is None:
-                        self.view.print_menu(self.is_logged_in, sub_message="\nCode was sent to your email address\n\n")
-                    else:
-                        self.view.print_menu(self.is_logged_in, sub_message="\n" + erg + "\n\n")
-
-                    self.get_menu_choice(self.view.get_menu_choice())
-
-                elif user_input == '6':
-                    # logout
-                    message = self.logout()
-                    self.view.clear_console()
-                    self.view.print_menu(self.is_logged_in, sub_message="\n" + message + "\n\n")
-                    self.get_menu_choice(self.view.get_menu_choice())
-
-                elif user_input == '7':
-                    # exit
-                    self.model.view.clear_console()
-                    sys.exit()
-
-            else:
-                self.view.invalid_input('Please try again!')
-                self.get_menu_choice(self.view.get_menu_choice())
         else:
             self.view.invalid_input("Please insert a valid Number")
             self.get_menu_choice(self.view.get_menu_choice())
@@ -394,15 +391,13 @@ class Controller:
     def get_symbol_preference(self, user_input):
         """Asks the user whether he wants to use symbols(True) or letters(False)"""
 
-        if re.match('^y', user_input) or re.match('yes', user_input):
+        if self.check_input(user_input) == 1:
             return True
 
-        elif re.match('^n', user_input) or re.match('no', user_input):
+        elif self.check_input(user_input) == 0:
             return False
 
         else:
-            self.view.invalid_input(
-                'Please answer the question with "yes" or "no"')
             self.get_symbol_preference(self.view.get_symbol_preference())
 
     def get_movement_choice(self, move, update=True):
@@ -410,49 +405,26 @@ class Controller:
 
         move = move.upper()
 
-        if len(move) == 1:
+        if re.match('^--', move):
+            if move[2:] == "STATS":
+                #eid = self.user['enemy']
+                pers = self.db.fetch_public_userdata(14) # eid where nutzername = enemy
 
-            if move == "Q":
-                # ToDo: Aus Spiel gehen ist das gleiche wie aufgeben
-                self.model.view.clear_console()
-                sys.exit()
+                self.view.show_stats(pers)
+                self.get_movement_choice(self.view.get_movement_choice())
 
-            elif move == "S":
+            if move[2:] == "SAVE":
                 # ToDo: Darf während pvp nicht möglich sein
                 self.save()
                 self.view.clear_console()
-                self.view.print_menu(self.is_logged_in)
+                self.view.print_menu()
                 return self.get_movement_choice(self.view.get_menu_choice())
 
-            elif move == "M":
-                # ToDo: Darf während pvp nicht möglich sein
-                self.view.clear_console()
-                self.view.print_menu(self.is_logged_in)
+            elif move[2:] == "Surrender":
+                self.model.view.clear_console()
+                # ToDo: Surrender implementieren
 
-            else:
-                self.view.invalid_input('Please try again!')
-                return self.get_movement_choice(self.view.get_movement_choice())
-
-        elif re.match('^[--]', move):
-            if move[2:] == "STATS":
-                self.view.print("Stats")
-                # opponent Stats
-                cgid = 1  # Wann wird eine Spiel-ID erstellt?
-                # wie erhalte ich die Spieler-ID
-
-                # change_saveid ? ? ?
-
-                id = self.db.fetch_public_gamedata(cgid)
-                # ToDo: Spieler-ID holen
-                data = self.db.fetch_public_userdata()
-                self.view.show_stats(data)
-
-            if move[2:] == "Surrender":
-                self.view.print("aufgeben")
-                # aufgeben das gleich wie Quit?
-
-            # ToDo: Remis auf Englisch -> Draw
-            if move[2:] == "REMIS":
+            elif move[2:] == "DRAW":
                 draw = self.ask_draw()
                 if not draw:
                     self.view.print("Draw was rejected")
@@ -461,22 +433,24 @@ class Controller:
                     # ToDo: Wenn Remis entsteht -> Spielende
                     pass
 
-            if move[2:] == "HELP":
+            elif move[2:] == "HELP":
                 self.view.get_help()
-
-        else:
-            if re.match('^[A-H][0-8][A-H][0-8]', move):
-
-                start_pos = move[:2]
-                goal_pos = move[-2:]
-
-                return self.model.move_piece(
-                    self.model.correlation[start_pos], self.model.correlation[goal_pos],
-                    move=move, update=update)
 
             else:
                 self.view.invalid_input(' Please try again!')
                 return self.get_movement_choice(self.view.get_movement_choice())
+
+        elif re.match('^[A-H][0-8][A-H][0-8]', move):
+
+                start_pos = move[:2]
+                goal_pos = move[-2:]
+
+                self.model.move_piece(
+                    self.model.correlation[start_pos], self.model.correlation[goal_pos], update=update)
+                return move
+        else:
+            self.view.invalid_input(' Please try again!')
+            return self.get_movement_choice(self.view.get_movement_choice())
 
     def ask_draw(self):
 
@@ -539,10 +513,13 @@ class Controller:
 
     def coop(self):
 
-        """Handles the actual game between two opponents"""
-
         self.init_board()
         temp = None
+
+        while temp is None:
+            temp = self.get_queue_content(self.games)
+
+        games = temp['games']
 
         while temp is None:
             temp = self.get_queue_content(self.games)
@@ -796,3 +773,18 @@ class Controller:
 
         self.view.last_board = self.model.get_copy_board_state()
         return True
+
+    def check_input(self, input):
+
+        input = input.upper()
+        if re.match('^Y', input) or re.match('YES', input):
+            return 1
+
+        elif re.match('^N', input) or re.match('NO', input):
+            return 0
+
+        else:
+            self.view.invalid_input(
+                'Please answer the question with "yes" or "no"')
+
+            return 2

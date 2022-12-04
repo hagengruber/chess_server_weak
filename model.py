@@ -153,9 +153,6 @@ class Model:
             if row[1] is None and row[2] is None and row[3] is None or row[5] is None and row[6] is None:
                 return True
 
-    def check_remis(self):
-        pass
-
     def recalculate_elo(self, victor_id, loser_id):
         victor_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + victor_id)
         loser_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + loser_id)

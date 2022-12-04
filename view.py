@@ -34,7 +34,8 @@ class View:
         box_top = ' \u250C' + '\u2500\u2500\u2500\u252C' * 7 + '\u2500\u2500\u2500\u2510'
         box_middle = ' \u251C' + '\u2500\u2500\u2500\u253C' * 7 + '\u2500\u2500\u2500\u2524'
         box_bottom = ' \u2514' + '\u2500\u2500\u2500\u2534' * 7 + '\u2500\u2500\u2500\u2518'
-        # self.print(self.model.currently_playing + ' is currently playing!\n')
+        self.print(
+            self.model.currently_playing + ' is currently playing!\n')
         self.print('   1   2   3   4   5   6   7   8\n')
         self.print(box_top + '\n')
         letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -73,7 +74,7 @@ class View:
 
         message = '\n\n-Enter a move by giving the coordinates of the starting point and the goal point\n'
         self.socket.sendall(message.encode())
-        message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
+        message = '-During a match you can either enter a legal Move or "--Help" for further commands\n'
         self.socket.sendall(message.encode())
 
         if login:
@@ -110,17 +111,14 @@ class View:
         return self.input()
 
     def show_stats(self, data):
-        self.print('Stats of the opponent')
-        self.print('Username: ' + data[0])
-        self.print('Win: ' + data[1])
-        self.print('Loss: ' + data[2])
-        self.print('Remis: ' + data[3])
-        self.print('Elo: ' + data[4])
+        self.print('Stats of the opponent: '+str(data)+'\n')
 
     def get_help(self):
-        self.print("q - Quit\n")
-        self.print("s - Save and Quit Game\n")
-        self.print("m - Main Menue\n")
+        self.print("--stats - show opponent Stats\n")
+        self.print("--save - Save and Quit Game\n")
         self.print("--remis - offer Remis\n")
         self.print("--surrender - Surrender\n")
-        self.print("--stats - show opponent Stats\n")
+
+    def accept_remis(self):
+        self.print('Do you want to accept Remis? ')
+        return self.input()
