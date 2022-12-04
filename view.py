@@ -1,11 +1,9 @@
 """
     Module for displaying the current state of the game to the user
 """
-import os
 import pyfiglet
 
-
-#Formatierung von Ausgaben Leerzeichen oder Neue Zeile vorne oder hinten einheitlich?
+# Formatierung von Ausgaben Leerzeichen oder Neue Zeile vorne oder hinten einheitlich?
 
 
 class View:
@@ -15,6 +13,7 @@ class View:
         self.socket = socket
         self.model = None
         self.last_board = None
+        self.count = 1
 
     def input(self, text=None):
         if text is not None:
@@ -25,6 +24,7 @@ class View:
         self.socket.sendall(text.encode())
 
     def update_board(self, state=""):
+        self.count += 1
         """Updates the board to show recent movement"""
         self.clear_console()
 
@@ -74,9 +74,9 @@ class View:
 
         message = '\n\n-Enter a move by giving the coordinates of the starting point and the goal point\n'
         self.socket.sendall(message.encode())
-        message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
+        message = '-During a match you can either enter a legal Move or "--Help" for further commands\n'
         self.socket.sendall(message.encode())
-        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Exit\n'
+        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Login   (5)Registration   (6)Exit\n'
         self.socket.sendall(message.encode())
 
         self.model.controller.get_menu_choice(self.get_menu_choice())
@@ -92,7 +92,7 @@ class View:
     def get_menu_choice(self):
         self.print('Please enter the number that corresponds to your desired menu: ')
         return self.input()
-        
+
     def get_symbol_preference(self):
         self.print(
             'Do you want to use symbols? If not, letters will be used instead. (Y/N): ')
@@ -103,17 +103,14 @@ class View:
         return self.input()
 
     def show_stats(self, data):
-        self.print('Stats of the opponent')
-        self.print('Username: ' + data[0])
-        self.print('Win: ' + data[1])
-        self.print('Loss: ' + data[2])
-        self.print('Remis: ' + data[3])
-        self.print('Elo: ' + data[4])
+        self.print('Stats of the opponent: '+str(data)+'\n')
 
     def get_help(self):
-        self.print("q - Quit\n")
-        self.print("s - Save and Quit Game\n")
-        self.print("m - Main Menue\n")
+        self.print("--stats - show opponent Stats\n")
+        self.print("--save - Save and Quit Game\n")
         self.print("--remis - offer Remis\n")
         self.print("--surrender - Surrender\n")
-        self.print("--stats - show opponent Stats\n")
+        
+    def accept_remis(self):
+        self.print('Do you want to accept Remis? ')
+        return self.input()
