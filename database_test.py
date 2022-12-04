@@ -15,15 +15,6 @@ def fxt_db():
     fxt_db = Database()
     return fxt_db
 
-    
-
-
-
-if __name__ == "__main__":
-    res = execute("""SELECT nutzername, siege, niederlagen, remis, elo 
-                                  FROM Spieler WHERE id = '%s'""" % player_id)
-        data = res.fetchall()
-    """
 
 def test_add_player(fxt_db):
     test_db = fxt_db
@@ -83,4 +74,3 @@ def test_change_saveid(fxt_db):
     test_db.change_saveid(1, 'MaxM_Save')
     data = test_db.fetch_full_userdata(1)
     assert data == [(1, 'test@gmx.de', 'hallo123', 'maxMustermann', 1, 1, 1, 500, 1)]
-    """

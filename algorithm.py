@@ -10,12 +10,13 @@ import multiprocessing as m
 class AI:
     """Handles the behavior of the AI"""
 
-    def __init__(self, model, view, color, enemy, controller):
+    def __init__(self, model, view, color, enemy, controller, depth):
         self.controller = controller
         self.model = model
         self.view = view
         self.color = color
         self.enemy = enemy  # Enemy Color
+        self.depth = depth
         self.Pawn_table = [
             [0, 0, 0, 0, 0, 0, 0, 0],
             [5, 10, 10, -20, -20, 10, 10, 5],
@@ -269,7 +270,7 @@ class AI:
                 pass
 
             # calcs the score of the current move
-            current_score = self.alpha_beta_pruning(temp, 3, -math.inf, math.inf, True)
+            current_score = self.alpha_beta_pruning(temp, self.depth, -math.inf, math.inf, True)
 
             if change_position is not None:
                 temp[y_move].position = change_position

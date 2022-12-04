@@ -23,7 +23,7 @@ class Database:
     def add_player(self, mail, password, username, code):
         """Adds a player to the 'Spieler' table"""
         self.open_connection()
-        self.cur.execute("""INSERT INTO Spieler (mail, passwort, nutzername, aktivierungscode) VALUES
+        self.cur.executescript("""INSERT INTO Spieler (mail, passwort, nutzername, aktivierungscode) VALUES
                             ('%s', '%s', '%s', '%s')""" % (mail, password, username, code))
         self.con.commit()
         self.close_connection()
@@ -170,4 +170,14 @@ class Database:
                                   FROM Spieler WHERE nutzername = '%s'""" % username)
         data = res.fetchall()
         self.close_connection()
+
+        data = int(data[0][0])
+
         return data
+
+    def update_general_data(self, table, column, content, sql_exec=""):
+        """Executes SQL statements for general update purpose"""
+        self.open_connection()
+        self.cur.execute("UPDATE " + table + " SET " + column + "=" + content + " " + sql_exec)
+        self.con.commit()
+        self.close_connection()
