@@ -34,7 +34,13 @@ class View:
         box_top = ' \u250C' + '\u2500\u2500\u2500\u252C' * 7 + '\u2500\u2500\u2500\u2510'
         box_middle = ' \u251C' + '\u2500\u2500\u2500\u253C' * 7 + '\u2500\u2500\u2500\u2524'
         box_bottom = ' \u2514' + '\u2500\u2500\u2500\u2534' * 7 + '\u2500\u2500\u2500\u2518'
-        self.print(self.model.currently_playing + ' is currently playing!\n')
+        temp = self.model.controller.games
+        
+        games = self.model.controller.get_queue_content(temp)
+
+        i = self.model.controller.loop_games(games)
+
+        self.print(games[i]['currently_playing'] + ' is currently playing!\n')
         self.print('   1   2   3   4   5   6   7   8\n')
         self.print(box_top + '\n')
         letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
