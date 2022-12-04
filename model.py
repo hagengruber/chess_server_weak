@@ -154,8 +154,8 @@ class Model:
                 return True
 
     def recalculate_elo(self, victor_id, loser_id):
-        victor_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + victor_id)
-        loser_elo = self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + loser_id)
+        victor_elo = int(self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + str(victor_id))[0][0])
+        loser_elo = int(self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + str(loser_id))[0][0])
         elo_difference = max(victor_elo, loser_elo) - min(victor_elo, loser_elo)
         elo_difference = elo_difference / 400
         expected_value = 1 / (1 + 10**elo_difference)

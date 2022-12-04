@@ -114,6 +114,7 @@ class View:
         self.print('Stats of the opponent: '+str(data)+'\n')
 
     def get_help(self):
+        self.print("legal move or\n")
         self.print("--stats - show opponent Stats\n")
         self.print("--save - Save and Quit Game\n")
         self.print("--remis - offer Remis\n")

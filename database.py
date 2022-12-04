@@ -170,6 +170,9 @@ class Database:
                                   FROM Spieler WHERE nutzername = '%s'""" % username)
         data = res.fetchall()
         self.close_connection()
+
+        data = int(data[0][0])
+
         return data
 
     def update_general_data(self, table, column, content, sql_exec=""):
