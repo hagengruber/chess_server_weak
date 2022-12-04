@@ -34,8 +34,7 @@ class View:
         box_top = ' \u250C' + '\u2500\u2500\u2500\u252C' * 7 + '\u2500\u2500\u2500\u2510'
         box_middle = ' \u251C' + '\u2500\u2500\u2500\u253C' * 7 + '\u2500\u2500\u2500\u2524'
         box_bottom = ' \u2514' + '\u2500\u2500\u2500\u2534' * 7 + '\u2500\u2500\u2500\u2518'
-        self.print(
-            self.model.currently_playing + ' is currently playing!\n')
+        # self.print(self.model.currently_playing + ' is currently playing!\n')
         self.print('   1   2   3   4   5   6   7   8\n')
         self.print(box_top + '\n')
         letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -66,7 +65,7 @@ class View:
         """Clear the console of unnecessary stuff"""
         self.socket.sendall("\033[H\033[J".encode())
 
-    def print_menu(self):
+    def print_menu(self, login, sub_message=None):
         """Display the starting menu and tell 'model' to ask the user what he wants to do"""
 
         message = pyfiglet.figlet_format("Chess Online")
@@ -76,8 +75,16 @@ class View:
         self.socket.sendall(message.encode())
         message = '-During a match you can enter "q" to quit, "s" to save or "m" to go back to the menu\n'
         self.socket.sendall(message.encode())
-        message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Login   (5)Registration   (6)Exit\n'
+
+        if login:
+            message = '(1)PlayerVsPlayer   (2)PlayerVsBot   (3)LoadGame   (4)Logout   (5)Exit\n'
+        else:
+            message = '(1)Login   (2)Registration   (3)Exit\n'
+
         self.socket.sendall(message.encode())
+
+        if sub_message is not None:
+            self.socket.sendall(sub_message.encode())
 
         self.model.controller.get_menu_choice(self.get_menu_choice())
 

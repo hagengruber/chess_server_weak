@@ -18,6 +18,7 @@ class Mail:
 
     @staticmethod
     def create_code():
+        """Creates Code for login"""
         # ToDo: Für starke Version: Code ist Bruteforcebar!
         return random.randint(1000, 99999)
 
@@ -35,10 +36,16 @@ class Mail:
         msg['Subject'] = subject
         msg['From'] = self.sender
 
-        conn = SMTP(self.SMTPServer)
-        conn.set_debuglevel(False)
-        conn.login(self.USERNAME, self.PASSWORD)
+        try:
+            conn = SMTP(self.SMTPServer)
+            conn.set_debuglevel(False)
+            conn.login(self.USERNAME, self.PASSWORD)
+        except TimeoutError:
+            return "Failed to send email. Make sure that you are connected to the Internet and your " \
+                   "Firewall allows smtp connections"
+
         try:
             conn.sendmail(self.sender, destination, msg.as_string())
         finally:
             conn.quit()
+            return None

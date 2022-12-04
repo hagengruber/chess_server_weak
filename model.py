@@ -62,7 +62,7 @@ class Model:
 
         self.check_rochade()
 
-    def move_piece(self, start_pos, goal_pos, update=True):
+    def move_piece(self, start_pos, goal_pos, move=None, update=True):
         """Move a piece to a given position if the move is legal"""
 
         # Var "update": the AI trys different moves but the board shouldn't update while AI thinks
@@ -105,22 +105,23 @@ class Model:
                     self.pieces.remove(killed_piece)
                 if update:
                     self.view.update_board()
-                return True
+                return move
             else:
                 self.view.invalid_input('Sorry, this move is not legal. Please try again!')
-                self.controller.get_movement_choice(self.view.get_movement_choice())
-                return False
+                return self.controller.get_movement_choice(self.view.get_movement_choice())
 
         else:
             self.view.invalid_input('There is no piece of your color on this space. Please try again!')
-            self.controller.get_movement_choice(self.view.get_movement_choice())
-            return False
+            return self.controller.get_movement_choice(self.view.get_movement_choice())
 
-    def check_for_king(self):
+    def check_for_king(self, color=None):
         """Check whether the king of the currently playing team is alive or not """
+        if color is None:
+            color = self.currently_playing
+
         king_alive = False
         for i in self.pieces:
-            if type(i) == King and i.colour == self.currently_playing:
+            if type(i) == King and i.colour == color:
                 king_alive = True
                 break
         return king_alive
