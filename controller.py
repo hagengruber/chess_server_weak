@@ -60,23 +60,8 @@ class Controller:
         if self.is_logged_in:
             return "You are already logged in as " + str(self.user['username'])
 
-        i = self.view.input("login: ")
-
-        if i == '1':
-            mail = 'florian.hagengruber@stud.th-deg.de'
-            password = 'aPassword'
-        if i == '2':
-            mail = 'mail@stud.th-deg.de'
-            password = 'aPassword'
-        if i == '3':
-            mail = 'sec@stud.th-deg.de'
-            password = 'aPassword'
-        if i == '4':
-            mail = 't@stud.th-deg.de'
-            password = 'aPassword'
-
-        #mail = self.view.input("email address: ")
-        #password = self.view.input("password: ")
+        mail = self.view.input("email address: ")
+        password = self.view.input("password: ")
 
         res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
