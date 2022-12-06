@@ -459,9 +459,8 @@ class Controller:
                 start_pos = move[:2]
                 goal_pos = move[-2:]
 
-                self.model.move_piece(
-                    self.model.correlation[start_pos], self.model.correlation[goal_pos], update=update)
-                return move
+                return self.model.move_piece(
+                    self.model.correlation[start_pos], self.model.correlation[goal_pos], move=move, update=update)
         else:
             self.view.invalid_input(' Please try again!')
             return self.get_movement_choice(self.view.get_movement_choice())
