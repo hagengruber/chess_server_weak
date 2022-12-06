@@ -34,13 +34,16 @@ class View:
         box_top = ' \u250C' + '\u2500\u2500\u2500\u252C' * 7 + '\u2500\u2500\u2500\u2510'
         box_middle = ' \u251C' + '\u2500\u2500\u2500\u253C' * 7 + '\u2500\u2500\u2500\u2524'
         box_bottom = ' \u2514' + '\u2500\u2500\u2500\u2534' * 7 + '\u2500\u2500\u2500\u2518'
-        temp = self.model.controller.games
-        
-        games = self.model.controller.get_queue_content(temp)
 
-        i = self.model.controller.loop_games(games)
+        temp = None
+
+        while temp is None:
+            temp = self.model.controller.get_queue_content(self.model.controller.games)
+
+        games, i = self.model.controller.get_game_room(temp)
 
         self.print(games[i]['currently_playing'] + ' is currently playing!\n')
+
         self.print('   1   2   3   4   5   6   7   8\n')
         self.print(box_top + '\n')
         letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -127,8 +130,4 @@ class View:
 
     def accept_remis(self):
         self.print('Do you want to accept Remis? ')
-        return self.input()
-
-    def get_difficulty(self):
-        self.print('How hard schould the AI be (1-5): ')
         return self.input()
