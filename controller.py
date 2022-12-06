@@ -608,6 +608,7 @@ class Controller:
                 temp = self.get_queue_content(self.games)
 
             games, i = self.get_game_room(temp)
+
             # if the correct game room was found
             if games[i]['currently_playing'] == self.user['username']:
                 # if the user can move a piece
@@ -697,7 +698,7 @@ class Controller:
                     self.get_menu_choice(self.view.get_menu_choice())
                     sys.exit()
 
-            break
+            # break
 
         temp = None
 
@@ -747,7 +748,9 @@ class Controller:
         games, i = self.get_game_room(temp)
         # if the correct game room was found
 
-        if games[i]['remis'] is not None:
+        if games[i]['remis'] is None:
+            return False
+        else:
             answer = False
 
             while answer != 'y' and answer != 'n':
