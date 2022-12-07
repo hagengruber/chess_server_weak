@@ -61,7 +61,21 @@ class Controller:
             return "You are already logged in as " + str(self.user['username'])
 
         mail = self.view.input("email address: ")
-        password = self.view.input("password: ")
+
+        if mail == '0':
+            mail = 'florian.hagengruber@stud.th-deg.de'
+            password = 'aPassword'
+        elif mail == '1':
+            mail = 'mail@stud.th-deg.de'
+            password = 'aPassword'
+        elif mail == '2':
+            mail = 't@stud.th-deg.de'
+            password = 'aPassword'
+        elif mail == '3':
+            mail = 'sec@stud.th-deg.de'
+            password = 'aPassword'
+        else:
+            password = self.view.input("password: ")
 
         res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
@@ -287,13 +301,16 @@ class Controller:
 
         else:
             old_content = []
-            while queue.qsize() != 0:
-                old_content.append(queue.get())
+            while True:
+                try:
+                    old_content.append(queue.get_nowait())
+                except Empty:
+                    break
 
         old_content.append(content)
 
         for i in old_content:
-            queue.put(i)
+            queue.put_nowait(i)
 
         if safe_mode:
             self.release_lock()
@@ -522,8 +539,8 @@ class Controller:
                     if temp['games'][i]['remis'] is not None:
                         write_success = True
 
-                    self.release_lock()
-                    break
+                self.release_lock()
+                break
 
         answer = self.user['username']
 
@@ -531,7 +548,7 @@ class Controller:
 
             temp = None
             while temp is None:
-                temp = self.get_queue_content(self.games, safe_mode=False)
+                temp = self.get_queue_content(self.games)
 
             games = temp['games']
 
@@ -544,6 +561,8 @@ class Controller:
 
                     answer = games[i]['remis']
                     continue
+
+        self.release_lock()
 
         if not answer:
             self.lock.acquire()
@@ -575,7 +594,8 @@ class Controller:
                             write_success = True
 
                         self.release_lock()
-                        break
+
+                    break
 
         return answer
 
@@ -696,6 +716,7 @@ class Controller:
 
                     else:
                         if print_wait:
+                            self.view.update_board()
                             self.view.print("The other Player is thinking...")
                             print_wait = False
 
@@ -759,52 +780,58 @@ class Controller:
         while temp is None:
             temp = self.get_queue_content(self.games)
 
-        games = temp['games']
+        games, i = self.get_room(temp)
 
-        for i in range(len(games)):
-            if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
-                # if the correct game room was found
+        if games[i]['remis'] is not None:
+            answer = False
 
-                if games[i]['remis'] is not None:
-                    answer = False
+            while answer != 'y' and answer != 'n':
 
-                    while answer != 'y' and answer != 'n':
-                        # ToDo: Programmabsturz wenn Benutzer nichts eingibt?
-                        answer = self.view.input('\n' + games[i]['remis'] + ' asks for Draw.\nAccept? (y/n)').lower()
-
-                    if answer == 'y':
-                        answer = True
+                games_new, a = self.get_room()
+                if games_new[a]['remis'] is not None:
+                    if not games_new[a]['remis']:
+                        return False
+                    elif games_new[a]['remis'] is True:
+                        return True
                     else:
-                        answer = False
+                        answer = self.view.input('\n' + str(games_new[a]['remis']) +
+                                                 ' asks for Draw.\nAccept? (y/n)').lower()
+                else:
+                    return False
 
-                    self.lock.acquire()
+            if answer == 'y':
+                answer = True
+            else:
+                answer = False
 
-                    new_temp = None
-                    while new_temp is None:
-                        new_temp = self.get_queue_content(self.games, safe_mode=False)
+            self.lock.acquire()
 
-                    games[i]['remis'] = answer
+            new_temp = None
+            while new_temp is None:
+                new_temp = self.get_queue_content(self.games, safe_mode=False)
 
-                    new_temp['games'][i] = games[i]
+            games[i]['remis'] = answer
 
-                    while True:
+            new_temp['games'][i] = games[i]
 
-                        q = None
-                        while q is None:
-                            q = self.get_queue_content(self.games, safe_mode=False)
+            while True:
 
-                        try:
+                q = None
+                while q is None:
+                    q = self.get_queue_content(self.games, safe_mode=False)
 
-                            if q['games'][i]['currently_playing'] == self.user['enemy']:
-                                # if the write operation was successful
-                                self.release_lock()
-                                return answer
-                            else:
-                                # if the write operation failed
-                                self.write_queue_content(self.games, new_temp, safe_mode=False)
+                try:
 
-                        except IndexError:
-                            self.write_queue_content(self.games, new_temp, safe_mode=False)
+                    if q['games'][i]['remis'] != self.user['enemy']:
+                        # if the write operation was successful
+                        self.release_lock()
+                        return answer
+                    else:
+                        # if the write operation failed
+                        self.write_queue_content(self.games, new_temp, safe_mode=False)
+
+                except IndexError:
+                    self.write_queue_content(self.games, new_temp, safe_mode=False)
 
     # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):
@@ -905,3 +932,18 @@ class Controller:
                 'Please answer the question with "yes" or "no"')
 
             return 2
+
+    def get_room(self, temp=None):
+
+        if temp is None:
+
+            temp = None
+
+            while temp is None:
+                temp = self.get_queue_content(self.games)
+
+        games = temp['games']
+
+        for i in range(len(games)):
+            if games[i]['player1'] == self.user['username'] or games[i]['player2'] == self.user['username']:
+                return games, i

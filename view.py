@@ -3,6 +3,7 @@
 """
 import pyfiglet
 
+
 # Formatierung von Ausgaben Leerzeichen oder Neue Zeile vorne oder hinten einheitlich?
 
 
@@ -34,8 +35,19 @@ class View:
         box_top = ' \u250C' + '\u2500\u2500\u2500\u252C' * 7 + '\u2500\u2500\u2500\u2510'
         box_middle = ' \u251C' + '\u2500\u2500\u2500\u253C' * 7 + '\u2500\u2500\u2500\u2524'
         box_bottom = ' \u2514' + '\u2500\u2500\u2500\u2534' * 7 + '\u2500\u2500\u2500\u2518'
-        self.print(
-            self.model.currently_playing + ' is currently playing!\n')
+
+        temp = None
+
+        while temp is None:
+            temp = self.model.controller.get_queue_content(self.model.controller.games)
+
+        games = temp['games']
+
+        for i in range(len(games)):
+            if games[i]['player1'] == self.model.controller.user['username'] \
+                    or games[i]['player2'] == self.model.controller.user['username']:
+                self.print(games[i]['currently_playing'] + ' is currently playing!\n')
+
         self.print('   1   2   3   4   5   6   7   8\n')
         self.print(box_top + '\n')
         letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
@@ -45,7 +57,7 @@ class View:
                 if state[i * 8 + j] is not None:
                     if state[i * 8 + j] != self.last_board[i * 8 + j]:
                         row += '\u2502\x1b[6;30;42m' + ' ' + \
-                            state[i * 8 + j].symbol + ' \x1b[0m'
+                               state[i * 8 + j].symbol + ' \x1b[0m'
                     else:
                         row += '\u2502' + ' ' + state[i * 8 + j].symbol + ' '
                 else:
@@ -111,7 +123,7 @@ class View:
         return self.input()
 
     def show_stats(self, data):
-        self.print('Stats of the opponent: '+str(data)+'\n')
+        self.print('Stats of the opponent: ' + str(data) + '\n')
 
     def get_help(self):
         self.print("legal move or\n")
