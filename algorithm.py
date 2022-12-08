@@ -4,7 +4,10 @@
 import math
 from tqdm import tqdm
 import pieces
-import multiprocessing as m
+# HotFix: statt import multiprocessing as m -> import threading as m
+import threading as m
+# HotFix: Einfügen -> from queue import Queue
+from queue import Queue
 
 
 class AI:
@@ -293,20 +296,27 @@ class AI:
         state = self.model.get_copy_board_state()
         possible_moves = self.get_possible_moves(self.color, state)
         result = []
+        # HotFix: einfügen -> threads = 8
+        threads = 8
 
         # Splits the list possible_moves in as many chunks as the PC has cores
-        k, a = divmod(len(possible_moves), m.cpu_count())
+        # HotFix: statt m.cpu_count() -> threads
+        k, a = divmod(len(possible_moves), threads)
+        # HotFix: statt m.cpu_count() -> threads
         process_moves = list(possible_moves[i * k + min(i, a):
-                                            (i + 1) * k + min(i + 1, a)] for i in range(m.cpu_count()))
+                                            (i + 1) * k + min(i + 1, a)] for i in range(threads))
 
-        output = tqdm(total=m.cpu_count())
+        # HotFix: einfügen -> threads
+        output = tqdm(total=threads)
 
         processes = []
-        queue = m.Queue()
+        queue = Queue()
 
         for i in process_moves:
-            processes.append(m.Process(target=self.calc_move, args=(i, queue, state,)))
-            processes[len(processes) - 1].start()
+            # HotFix: statt m.Process -> m.Thread
+            processes.append(m.Thread(target=self.calc_move, args=(i, queue, state,)))
+            # HotFix: statt len(processes) - 1 -> -1
+            processes[-1].start()
 
         for i in processes:
             i.join()
