@@ -62,6 +62,7 @@ class Controller:
 
         mail = self.view.input("email address: ")
 
+        # ToDo: Remove
         if mail == '0':
             mail = 'florian.hagengruber@stud.th-deg.de'
             password = 'aPassword'
@@ -80,6 +81,7 @@ class Controller:
         res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
 
         if len(res) == 0:
+            # ToDo: CWE 549
             return "Invalid credentials"
 
         if res[0][9] is not None:
@@ -134,7 +136,6 @@ class Controller:
                 self.view.print("Your input was not a valid password\n")
                 continue
 
-        # ToDo: Check username: for now: florian.hagengruber@stud.th-deg.de -> f.hagengruber
         username = mail.split(".")[0][0] + "." + mail.split(".")[1].split("@")[0]
 
         m = Mail()
