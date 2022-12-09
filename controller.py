@@ -157,7 +157,7 @@ class Controller:
         if not self.load_game:
             self.model.reset_pieces()
             # initializes the previous board of the view
-            self.view.last_board = self.model.get_copy_board_state()
+            self.view.last_board = self.model.get_copy_board_state(self.model.board_state)
         else:
             for _ in range(64):
                 if self.model.board_state[_] is not None:
@@ -439,7 +439,7 @@ class Controller:
                 # ToDo: Darf während pvp nicht möglich sein
                 self.save()
                 self.view.clear_console()
-                self.view.print_menu()
+                self.view.print_menu(True, "\nSaved current Game\n\n")
                 return self.get_movement_choice(self.view.get_menu_choice())
 
             elif move[2:] == "Surrender":
@@ -835,10 +835,16 @@ class Controller:
     # Board aktuellen spieler und ob KI spielt View Symbol
     def save(self):
         """Saves the current state to a JSON-File"""
-        GameSave = {'currently_playing': str(self.model.currently_playing),
-                    'show_symbols': self.model.show_symbols,
-                    'board_state': {},
-                    'Ai': False}
+
+        GameSave = self.db.get_GameSave(self.user['username'])
+
+        if GameSave is not False:
+            self.db.remove_save(self.user['username'])
+
+        GameSave = {"currently_playing": str(self.model.currently_playing),
+                    "show_symbols": self.model.show_symbols,
+                    "board_state": {},
+                    "Ai": False}
 
         if self.model.ai:
             GameSave.update({'Ai': True})
@@ -847,72 +853,80 @@ class Controller:
         for i in range(64):
             if self.model.board_state[i] is not None:
                 lol = self.model.board_state[i].__doc__.split(" ")
-                json_dict.update({str(i): {'piece': lol[2],
-                                           'colour': str(self.model.board_state[i].colour),
-                                           'moved': self.model.board_state[i].moved,
-                                           'position': self.model.board_state[i].position}})
+                json_dict.update({str(i): {"piece": lol[2],
+                                           "colour": str(self.model.board_state[i].colour),
+                                           "moved": self.model.board_state[i].moved,
+                                           "position": self.model.board_state[i].position}})
             else:
-                json_dict.update({str(i): {'piece': None,
-                                           'symbol': None,
-                                           'colour': None,
-                                           'moved': None,
-                                           'position': None}})
+                json_dict.update({str(i): {"piece": None,
+                                           "symbol": None,
+                                           "colour": None,
+                                           "moved": None,
+                                           "position": None}})
 
-        GameSave['board_state'].update(json_dict)
+        GameSave["board_state"].update(json_dict)
 
-        path = str(get_files(1))
-        name = "\\GameSave.json"
+        # path = str(get_files(1))
+        # name = "\\GameSave.json"
 
-        with open(path + name, "w") as json_file:
-            json.dump(GameSave, json_file)
+        GameSave = str(GameSave).replace("'", '"')
+
+        save_id = self.db.add_save(GameSave)
+        self.db.change_saveid(self.db.get_id(self.user['username']), save_id)
+
+        # with open(path + name, "w") as json_file:
+            # json.dump(GameSave, json_file)
 
     def load(self):
         """Loads a savestate"""
-        files = get_files(2)
-        name = 'GameSave.json'  # ggf Namen ändern
+        # files = get_files(2)
+        # name = 'GameSave.json'  # ggf Namen ändern
 
-        if name in files:  # Parameter eintragen fürs testen
-            with open("GameSave.json", "r") as Data:  # Parameter eintragen fürs testen
-                GameSave = json.load(Data)
-                # den aktuellen spieler abfragen
+        GameSave = self.db.get_GameSave(self.user['username'])
 
-                self.model.currently_playing = GameSave['currently_playing']
-                self.model.show_symbols = GameSave['show_symbols']
-                self.load_game = True
-                self.user_ai = AI(self.model, self.view, "Black", "White", self)
-
-                if 'Ai' in GameSave:
-                    self.ai = True
-                    self.model.ai = True
-
-                for i in range(64):
-                    # Moved wird nicht übernommen
-                    if GameSave['board_state'][str(i)]['piece'] == 'None':
-                        self.model.board_state[i] = None
-
-                    else:
-                        if GameSave['board_state'][str(i)]['piece'] == 'Rooks':
-                            self.model.board_state[i] = Rook(GameSave['board_state'][str(i)]['colour'],
-                                                             i, self.model)
-                        if GameSave['board_state'][str(i)]['piece'] == 'Horses':
-                            self.model.board_state[i] = Horse(GameSave['board_state'][str(i)]['colour'],
-                                                              i, self.model)
-                        if GameSave['board_state'][str(i)]['piece'] == 'Bishops':
-                            self.model.board_state[i] = Bishop(GameSave['board_state'][str(i)]['colour'],
-                                                               i, self.model)
-                        if GameSave['board_state'][str(i)]['piece'] == 'Queens':
-                            self.model.board_state[i] = Queen(GameSave['board_state'][str(i)]['colour'],
-                                                              i, self.model)
-                        if GameSave['board_state'][str(i)]['piece'] == 'Kings':
-                            self.model.board_state[i] = King(GameSave['board_state'][str(i)]['colour'],
-                                                             i, self.model)
-                        if GameSave['board_state'][str(i)]['piece'] == 'Pawns':
-                            self.model.board_state[i] = Pawn(GameSave['board_state'][str(i)]['colour'],
-                                                             i, self.model)
-
-        else:
-            self.view.print("There's no Save File for your Game!\n")
+        if not GameSave:
+            self.view.clear_console()
+            self.view.print_menu(True, "\nNo saved Game found\n\n")
             return False
+
+        GameSave = GameSave.replace('False', 'false').replace('True', 'true').replace('None', 'null')
+
+        GameSave = json.loads(GameSave)
+        # den aktuellen spieler abfragen
+
+        self.model.currently_playing = GameSave['currently_playing']
+        self.model.show_symbols = GameSave['show_symbols']
+        self.load_game = True
+        self.user_ai = AI(self.model, self.view, "Black", "White", self)
+
+        if 'Ai' in GameSave:
+            self.ai = True
+            self.model.ai = True
+
+        for i in range(64):
+            # Moved wird nicht übernommen
+            if GameSave['board_state'][str(i)]['piece'] == 'None':
+                self.model.board_state[i] = None
+
+            else:
+                if GameSave['board_state'][str(i)]['piece'] == 'Rooks':
+                    self.model.board_state[i] = Rook(GameSave['board_state'][str(i)]['colour'],
+                                                     i, self.model)
+                if GameSave['board_state'][str(i)]['piece'] == 'Horses':
+                    self.model.board_state[i] = Horse(GameSave['board_state'][str(i)]['colour'],
+                                                      i, self.model)
+                if GameSave['board_state'][str(i)]['piece'] == 'Bishops':
+                    self.model.board_state[i] = Bishop(GameSave['board_state'][str(i)]['colour'],
+                                                       i, self.model)
+                if GameSave['board_state'][str(i)]['piece'] == 'Queens':
+                    self.model.board_state[i] = Queen(GameSave['board_state'][str(i)]['colour'],
+                                                      i, self.model)
+                if GameSave['board_state'][str(i)]['piece'] == 'Kings':
+                    self.model.board_state[i] = King(GameSave['board_state'][str(i)]['colour'],
+                                                     i, self.model)
+                if GameSave['board_state'][str(i)]['piece'] == 'Pawns':
+                    self.model.board_state[i] = Pawn(GameSave['board_state'][str(i)]['colour'],
+                                                     i, self.model)
 
         self.view.last_board = self.model.get_copy_board_state()
         return True
