@@ -76,6 +76,7 @@ class Model:
             if self.board_state[start_pos].check_legal_move(goal_pos):
                 self.board_state[goal_pos] = moved_piece
                 self.board_state[start_pos] = None
+                print("Position changed: " + str(moved_piece.position) + " -> " + str(goal_pos))
                 moved_piece.position = goal_pos
                 if type(moved_piece) == Pawn:
                     if moved_piece.upgrade():
@@ -107,10 +108,18 @@ class Model:
                     self.view.update_board()
                 return move
             else:
+                print("Erg: " + str(self.board_state[start_pos].check_legal_move(goal_pos)))
                 self.view.invalid_input('Sorry, this move is not legal. Please try again!')
                 return self.controller.get_movement_choice(self.view.get_movement_choice())
 
         else:
+            try:
+                print("Color of pieces: " + str(moved_piece.colour))
+            except AttributeError:
+                pass
+            print("Current color: " + str(self.currently_playing))
+            print("pieces: " + str(moved_piece))
+
             self.view.invalid_input('There is no piece of your color on this space. Please try again!')
             return self.controller.get_movement_choice(self.view.get_movement_choice())
 
@@ -149,9 +158,12 @@ class Model:
         else:
             row = kopie[:8]
 
-        if not row[0].moved and not row[4].moved and not row[7].moved:
-            if row[1] is None and row[2] is None and row[3] is None or row[5] is None and row[6] is None:
-                return True
+        try:
+            if not row[0].moved and not row[4].moved and not row[7].moved:
+                if row[1] is None and row[2] is None and row[3] is None or row[5] is None and row[6] is None:
+                    return True
+        except AttributeError:
+            return False
 
     def recalculate_elo(self, victor_id, loser_id):
         victor_elo = int(self.database.fetch_general_data('elo', 'Spieler', 'WHERE id = ' + str(victor_id))[0][0])

@@ -360,10 +360,8 @@ class Controller:
 
                 elif user_input == '2':
                     self.model.ai = True
-                    self.user_ai = AI(self.model, self.view,
-                                      "Black", "White", self)
-                    self.model.show_symbols = self.get_symbol_preference(
-                        self.view.get_symbol_preference())
+                    self.user_ai = AI(self.model, self.view, "Black", "White", self)
+                    self.model.show_symbols = self.get_symbol_preference(self.view.get_symbol_preference())
 
                     self.start_game()
 

@@ -4,9 +4,8 @@
 import math
 from tqdm import tqdm
 import pieces
-# HotFix: statt import multiprocessing as m -> import threading as m
 import threading as m
-# HotFix: Einfügen -> from queue import Queue
+from multiprocessing import cpu_count
 from queue import Queue
 
 
@@ -281,7 +280,10 @@ class AI:
                 best_score = current_score
                 final_move = next_move
 
-        queue.put([final_move, best_score])
+        if queue is not None:
+            queue.put([final_move, best_score])
+        else:
+            return [final_move, best_score]
 
     def move(self):
         """
@@ -296,49 +298,67 @@ class AI:
         state = self.model.get_copy_board_state()
         possible_moves = self.get_possible_moves(self.color, state)
         result = []
-        # HotFix: einfügen -> threads = 8
-        threads = 8
+
+        threads = cpu_count()
 
         # Splits the list possible_moves in as many chunks as the PC has cores
-        # HotFix: statt m.cpu_count() -> threads
+
         k, a = divmod(len(possible_moves), threads)
-        # HotFix: statt m.cpu_count() -> threads
+
         process_moves = list(possible_moves[i * k + min(i, a):
                                             (i + 1) * k + min(i + 1, a)] for i in range(threads))
 
-        # HotFix: einfügen -> threads
         output = tqdm(total=threads)
 
         processes = []
         queue = Queue()
+        is_thread = True
 
         for i in process_moves:
-            # HotFix: statt m.Process -> m.Thread
+
             processes.append(m.Thread(target=self.calc_move, args=(i, queue, state,)))
-            # HotFix: statt len(processes) - 1 -> -1
-            processes[-1].start()
 
-        for i in processes:
-            i.join()
-            output.update()
-            self.view.update_board()
-            self.view.print('\n' + str(output))
+            try:
+                processes[100].start()
+            except OSError:
+                print("Fail to multithread")
+                result = self.calc_move(possible_moves, queue, state, )
+                is_thread = False
+                break
+            except IndexError:
+                print("Fail to multithread")
+                result = self.calc_move(possible_moves, None, state)
+                is_thread = False
+                break
 
-        for _ in range(queue.qsize()):
-            result.append(queue.get())
+        if is_thread:
 
-        result = sorted(result, key=lambda x: x[1])
-        same_score = []
-        lower_score = result[0][1]
+            for i in processes:
+                i.join()
+                output.update()
+                self.view.update_board()
+                self.view.print('\n' + str(output))
 
-        for i in result:
-            if i[1] == lower_score:
-                same_score.append(i)
+            for _ in range(queue.qsize()):
+                result.append(queue.get())
 
-        same_score.sort()
+            result = sorted(result, key=lambda x: x[1])
+            same_score = []
+            lower_score = result[0][1]
 
-        x_move, y_move = same_score[0][0]
+            for i in result:
+                if i[1] == lower_score:
+                    same_score.append(i)
+
+            same_score.sort()
+
+            x_move, y_move = same_score[0][0]
+
+        else:
+            x_move, y_move = result[0]
 
         output.close()
+
+        print("AI Move: " + str(x_move) + " " + str(y_move))
 
         self.model.move_piece(x_move, y_move)
