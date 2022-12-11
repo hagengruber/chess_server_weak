@@ -321,12 +321,12 @@ class AI:
             try:
                 processes[100].start()
             except OSError:
-                print("Fail to multithread")
+                print("Multithreading failed")
                 result = self.calc_move(possible_moves, queue, state, )
                 is_thread = False
                 break
             except IndexError:
-                print("Fail to multithread")
+                print("Multithreading failed")
                 result = self.calc_move(possible_moves, None, state)
                 is_thread = False
                 break
