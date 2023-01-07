@@ -31,7 +31,7 @@ class Database:
     def add_game(self, player1_id, player2_id, victor_id):
         """Adds a completed game to the 'Spiele' table"""
         self.open_connection()
-        self.cur.execute("""INSERT INTO Spiele (spieler1id, spieler2id, siegerid) VALUES 
+        self.cur.executescript("""INSERT INTO Spiele (spieler1id, spieler2id, siegerid) VALUES 
                             ('%s', '%s', '%s')""" % (player1_id, player2_id, victor_id))
         self.con.commit()
         self.close_connection()
@@ -39,7 +39,7 @@ class Database:
     def add_save(self, dataname):
         """Adds a savestate to the 'Speicherstände' table"""
         self.open_connection()
-        self.cur.execute("""INSERT INTO Speicherstände (name) VALUES ('%s')""" % dataname)
+        self.cur.executescript("""INSERT INTO Speicherstände (name) VALUES ('%s')""" % dataname)
         self.con.commit()
         pk = self.cur.lastrowid
         self.close_connection()
@@ -159,17 +159,7 @@ class Database:
     def fetch_general_data(self, filter, database, sql_exec=""):
         """Executes SQL statements for general purpose"""
         self.open_connection()
-        res = self.cur.execute("SELECT " + filter +
-                               " FROM " + database + " " + sql_exec)
-        data = res.fetchall()
-        self.close_connection()
-        return data
-
-    def fetch_general_data(self, filter, table, sql_exec=""):
-        """Executes SQL statements for general select purpose"""
-        self.open_connection()
-        res = self.cur.execute("SELECT " + filter +
-                               " FROM " + table + " " + sql_exec)
+        res = self.cur.execute("SELECT " + filter + " FROM " + database + " " + sql_exec)
         data = res.fetchall()
         self.close_connection()
         return data

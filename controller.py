@@ -63,7 +63,7 @@ class Controller:
         mail = self.view.input("email address: ")
         password = self.view.input("password: ")
 
-        res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' and passwort='" + password + "';")
+        res = self.db.fetch_general_data("*", "Spieler", "WHERE mail='" + mail + "' AND passwort='" + password + "';")
 
         if len(res) == 0:
             # ToDo: CWE 549
