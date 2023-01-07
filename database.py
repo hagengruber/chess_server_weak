@@ -186,6 +186,11 @@ class Database:
 
         return data
 
+    def test(self, table, pat, data):
+        self.open_connection()
+        self.cur.execute("INSERT INTO " + table + " (" + pat + ") VALUES (" + data + ")")
+        self.close_connection()
+
     def update_general_data(self, table, column, content, sql_exec=""):
         """Executes SQL statements for general update purpose"""
         self.open_connection()
