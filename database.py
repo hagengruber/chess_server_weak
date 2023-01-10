@@ -159,18 +159,8 @@ class Database:
     def fetch_general_data(self, filter, database, sql_exec=""):
         """Executes SQL statements for general purpose"""
         self.open_connection()
-        res = self.cur.executescript("SELECT " + filter +
-                               " FROM " + database + " " + sql_exec)
-        data = res.fetchall()
-        self.close_connection()
-        return data
-
-    def fetch_general_data(self, filter, table, sql_exec=""):
-        """Executes SQL statements for general select purpose"""
-        self.open_connection()
-        res = self.cur.executescript("SELECT " + filter +
-                               " FROM " + table + " " + sql_exec)
-        data = res.fetchall()
+        print("""SELECT """ + filter + """ FROM """ + database + """ """ + sql_exec)
+        data = self.cur.fetchall()
         self.close_connection()
         return data
 
